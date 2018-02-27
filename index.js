@@ -14,14 +14,16 @@ function Flatbush(numItems, nodeSize) {
     // calculate the total number of nodes in the R-tree to allocate space for
     var n = numItems;
     var numNodes = n;
+    var numLevels = 1;
     do {
         n = Math.ceil(n / this._nodeSize);
         numNodes += n;
+        numLevels++;
     } while (n !== 1);
 
     this.data = new Float64Array(numNodes * 5);
     this._hilbertValues = new Uint32Array(numItems);
-    this._levelBoundaries = [];
+    this._levelBoundaries = new Uint32Array(numLevels);
 
     this._numAdded = 0;
     this._pos = 0;
@@ -67,6 +69,7 @@ Flatbush.prototype = {
 
         var pos = 0; // cursor for reading child nodes
         var numNodes = this._numItems;
+        var level = 0;
 
         do {
             // generate nodes at the next tree level, bottom-up
@@ -74,7 +77,7 @@ Flatbush.prototype = {
             numNodes = Math.ceil(numNodes / this._nodeSize);
 
             // mark the start of a new tree level (for checks during search)
-            this._levelBoundaries.push(this._pos);
+            this._levelBoundaries[level++] = this._pos;
 
             // generate a parent node for each block of consecutive <nodeSize> nodes
             while (pos < end) {
@@ -107,7 +110,7 @@ Flatbush.prototype = {
 
         } while (numNodes !== 1);
 
-        this._levelBoundaries.push(this._pos);
+        this._levelBoundaries[level++] = this._pos;
     },
 
     search: function (minX, minY, maxX, maxY, visitFn) {
@@ -115,11 +118,19 @@ Flatbush.prototype = {
         var queue = [];
 
         while (nodeIndex !== undefined) {
-            for (var i = 0; i < this._nodeSize; i++) {
+            // find the bounds of the current tree level
+            var end;
+            for (var i = 0; i < this._levelBoundaries.length; i++) {
+                end = this._levelBoundaries[i];
+                if (end > nodeIndex) break;
+            }
+
+            // search through child nodes
+            for (i = 0; i < this._nodeSize; i++) {
                 var pos = nodeIndex + 5 * i;
 
                 // stop if we reached the end of the tree level
-                if (i > 0 && this._levelBoundaries.indexOf(pos) >= 0) break;
+                if (i > 0 && pos >= end) break;
 
                 var index = this.data[pos++];
 
