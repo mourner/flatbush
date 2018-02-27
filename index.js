@@ -55,13 +55,14 @@ Flatbush.prototype = {
         var height = this._maxY - this._minY;
         var hilbertMax = (1 << 16) - 1;
 
+        // map item coordinates into Hilbert coordinate space and calculate Hilbert values
         for (var i = 0; i < this._numItems; i++) {
             var x = Math.floor(hilbertMax * this.data[5 * i + 1] / width);
             var y = Math.floor(hilbertMax * this.data[5 * i + 2] / height);
             this._hilbertValues[i] = hilbert(x, y);
         }
 
-        // sort boxes by hilbert value
+        // sort items by their Hilbert value (for packing later)
         sort(this._hilbertValues, this.data, 0, this._numItems - 1);
 
         var pos = 0; // cursor for reading child nodes
@@ -72,14 +73,18 @@ Flatbush.prototype = {
             var end = pos + 5 * numNodes;
             numNodes = Math.ceil(numNodes / this._nodeSize);
 
+            // mark the start of a new tree level (for checks during search)
             this._levelBoundaries[this._pos] = true;
 
+            // generate a parent node for each block of consecutive <nodeSize> nodes
             while (pos < end) {
                 var nodeMinX = Infinity;
                 var nodeMinY = Infinity;
                 var nodeMaxX = -Infinity;
                 var nodeMaxY = -Infinity;
                 var nodeIndex = pos;
+
+                // calculate bbox for the new node
                 for (i = 0; i < this._nodeSize && pos < end; i++) {
                     pos++; // skip index
                     var minX = this.data[pos++];
@@ -91,6 +96,8 @@ Flatbush.prototype = {
                     if (maxX > nodeMaxX) nodeMaxX = maxX;
                     if (maxY > nodeMaxY) nodeMaxY = maxY;
                 }
+
+                // add the new node to the tree data
                 this.data[this._pos++] = nodeIndex;
                 this.data[this._pos++] = nodeMinX;
                 this.data[this._pos++] = nodeMinY;
@@ -111,6 +118,7 @@ Flatbush.prototype = {
             for (var i = 0; i < this._nodeSize; i++) {
                 var pos = nodeIndex + 5 * i;
 
+                // stop if we reached the end of the tree level
                 if (i > 0 && this._levelBoundaries[pos]) break;
 
                 var index = this.data[pos++];
@@ -121,11 +129,11 @@ Flatbush.prototype = {
                 if (minX > this.data[pos++]) continue; // minX > nodeMaxX
                 if (minY > this.data[pos++]) continue; // minY > nodeMaxY
 
-                if (index < this._numItems * 5) { // leaf item
-                    visitFn(index);
+                if (index < this._numItems * 5) {
+                    visitFn(index); // leaf item
 
-                } else { // node
-                    queue.push(index); // add node to search queue
+                } else {
+                    queue.push(index); // node; add it to the search queue
                 }
             }
 
@@ -134,6 +142,7 @@ Flatbush.prototype = {
     }
 };
 
+// custom quicksort that sorts bbox data alongside the hilbert values
 function sort(values, boxes, left, right) {
     if (left >= right) return;
 
@@ -164,6 +173,7 @@ function sort(values, boxes, left, right) {
     }
 }
 
+// swap two values and two corresponding boxes
 function swap(values, boxes, i, j) {
     var temp = values[i];
     values[i] = values[j];
