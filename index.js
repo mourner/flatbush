@@ -21,7 +21,7 @@ function Flatbush(numItems, nodeSize) {
 
     this.data = new Float64Array(numNodes * 5);
     this._hilbertValues = new Uint32Array(numItems);
-    this._levelBoundaries = {};
+    this._levelBoundaries = [];
 
     this._numAdded = 0;
     this._pos = 0;
@@ -74,7 +74,7 @@ Flatbush.prototype = {
             numNodes = Math.ceil(numNodes / this._nodeSize);
 
             // mark the start of a new tree level (for checks during search)
-            this._levelBoundaries[this._pos] = true;
+            this._levelBoundaries.push(this._pos);
 
             // generate a parent node for each block of consecutive <nodeSize> nodes
             while (pos < end) {
@@ -107,7 +107,7 @@ Flatbush.prototype = {
 
         } while (numNodes !== 1);
 
-        this._levelBoundaries[this._pos] = true;
+        this._levelBoundaries.push(this._pos);
     },
 
     search: function (minX, minY, maxX, maxY, visitFn) {
@@ -119,7 +119,7 @@ Flatbush.prototype = {
                 var pos = nodeIndex + 5 * i;
 
                 // stop if we reached the end of the tree level
-                if (i > 0 && this._levelBoundaries[pos]) break;
+                if (i > 0 && this._levelBoundaries.indexOf(pos) >= 0) break;
 
                 var index = this.data[pos++];
 
