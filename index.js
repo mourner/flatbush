@@ -8,6 +8,8 @@ function flatbush(numItems, nodeSize) {
 
 function Flatbush(numItems, nodeSize) {
 
+    if (numItems === undefined) throw new Error('Missign constructor argument: numItems.');
+
     this._numItems = numItems;
     this._nodeSize = nodeSize || 16;
 
