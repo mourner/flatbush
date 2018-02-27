@@ -2,15 +2,14 @@
 
 module.exports = flatbush;
 
-function flatbush(numItems, nodeSize, hilbertOrder) {
-    return new Flatbush(numItems, nodeSize, hilbertOrder);
+function flatbush(numItems, nodeSize) {
+    return new Flatbush(numItems, nodeSize);
 }
 
-function Flatbush(numItems, nodeSize, hilbertOrder) {
+function Flatbush(numItems, nodeSize) {
 
     this._numItems = numItems;
     this._nodeSize = nodeSize || 16;
-    this._hilbertOrder = hilbertOrder || 16;
 
     // calculate the total number of nodes in the R-tree to allocate space for
     var n = numItems;
@@ -54,12 +53,12 @@ Flatbush.prototype = {
 
         var width = this._maxX - this._minX;
         var height = this._maxY - this._minY;
-        var hilbertMax = Math.pow(2, this._hilbertOrder) - 1;
+        var hilbertMax = (1 << 16) - 1;
 
         for (var i = 0; i < this._numItems; i++) {
             var x = Math.floor(hilbertMax * this.data[5 * i + 1] / width);
             var y = Math.floor(hilbertMax * this.data[5 * i + 2] / height);
-            this._hilbertValues[i] = hilbert(this._hilbertOrder, x, y);
+            this._hilbertValues[i] = hilbert(x, y);
         }
 
         // sort boxes by hilbert value
@@ -192,10 +191,7 @@ function swap(values, boxes, i, j) {
 
 // Fast Hilbert curve algorithm by http://threadlocalmutex.com/
 // Ported from C++ https://github.com/rawrunprotected/hilbert_curves (public domain)
-function hilbert(n, x, y) {
-    x = x << (16 - n);
-    y = y << (16 - n);
-
+function hilbert(x, y) {
     var a = x ^ y;
     var b = 0xFFFF ^ a;
     var c = 0xFFFF ^ (x | y);
@@ -238,5 +234,5 @@ function hilbert(n, x, y) {
     i1 = (i1 | (i1 << 2)) & 0x33333333;
     i1 = (i1 | (i1 << 1)) & 0x55555555;
 
-    return (((i1 << 1) | i0) >> (32 - 2 * n)) >>> 0;
+    return ((i1 << 1) | i0) >>> 0;
 }
