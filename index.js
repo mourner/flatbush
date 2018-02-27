@@ -64,7 +64,39 @@ Flatbush.prototype = {
         // sort boxes by hilbert value
         sort(this._hilbertValues, this.data, 0, this._numItems - 1);
 
-        // TODO generate remaining nodes
+        var pos = 0; // for reading child nodes
+        var numNodes = this._numItems;
+
+        do {
+            // generate nodes at the next tree level, bottom-up
+            var end = pos + 5 * numNodes;
+            numNodes = Math.ceil(numNodes / this._nodeSize);
+
+            while (pos < end) {
+                var nodeMinX = Infinity;
+                var nodeMinY = Infinity;
+                var nodeMaxX = -Infinity;
+                var nodeMaxY = -Infinity;
+                var nodeIndex = pos;
+                for (i = 0; i < this._nodeSize && pos < end; i++) {
+                    pos++; // skip index
+                    var minX = this.data[pos++];
+                    var minY = this.data[pos++];
+                    var maxX = this.data[pos++];
+                    var maxY = this.data[pos++];
+                    if (minX < nodeMinX) nodeMinX = minX;
+                    if (minY < nodeMinY) nodeMinY = minY;
+                    if (maxX > nodeMaxX) nodeMaxX = maxX;
+                    if (maxY > nodeMaxY) nodeMaxY = maxY;
+                }
+                this.data[this._pos++] = nodeIndex;
+                this.data[this._pos++] = nodeMinX;
+                this.data[this._pos++] = nodeMinY;
+                this.data[this._pos++] = nodeMaxX;
+                this.data[this._pos++] = nodeMaxY;
+            }
+
+        } while (numNodes !== 1);
     }
 };
 
