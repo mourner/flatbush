@@ -22,3 +22,21 @@ index.search(minX, minY, maxX, maxY, (i) => {
 });
 
 ```
+
+## Performance
+
+Running `node bench.js`:
+
+```
+1000000 rectangles
+
+flatbush: 310.386ms
+1000 searches 10%: 818.892ms
+1000 searches 1%: 155.498ms
+1000 searches 0.01%: 14.835ms
+
+rbush: 1372.663ms
+1000 searches 10%: 1451.644ms
+1000 searches 1%: 233.894ms
+1000 searches 0.01%: 23.553ms
+```

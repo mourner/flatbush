@@ -5,6 +5,8 @@ var rbush = require('rbush');
 
 var N = 1000000;
 
+console.log(N + ' rectangles');
+
 function addRandomBox(arr, boxSize) {
     var x = Math.random() * (100 - boxSize);
     var y = Math.random() * (100 - boxSize);
