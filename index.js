@@ -48,7 +48,7 @@ Flatbush.prototype = {
 
     finish: function () {
         if (this._numAdded !== this._numItems) {
-            throw new Error('The number of items added does not match the number in the constructor.')
+            throw new Error('The number of items added does not match the number in the constructor.');
         }
 
         var width = this._maxX - this._minX;

@@ -1,0 +1,34 @@
+{
+  "name": "flatbush",
+  "version": "1.0.0",
+  "description": "Fast static spatial index for rectangles",
+  "main": "index.js",
+  "scripts": {
+    "test": "eslint index.js debug.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mourner/flatbush.git"
+  },
+  "eslintConfig": {
+    "extends": "mourner"
+  },
+  "keywords": [
+    "geometry",
+    "spatial",
+    "tree",
+    "index",
+    "rectangle",
+    "search"
+  ],
+  "author": "Vladimir Agafonkin",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mourner/flatbush/issues"
+  },
+  "homepage": "https://github.com/mourner/flatbush#readme",
+  "devDependencies": {
+    "eslint": "^4.18.1",
+    "eslint-config-mourner": "^2.0.3"
+  }
+}

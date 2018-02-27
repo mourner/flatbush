@@ -1,8 +1,8 @@
+'use strict';
 
 var flatbush = require('./');
 
 var N = 1000000;
-var hilbertOrder = 16;
 
 console.time('gen data');
 var coords = [];
@@ -19,7 +19,7 @@ console.timeEnd('gen data');
 
 console.time('flatbush');
 var index = flatbush(N);
-for (var i = 0; i < coords.length; i += 4) {
+for (i = 0; i < coords.length; i += 4) {
     index.add(
         coords[i],
         coords[i + 1],
