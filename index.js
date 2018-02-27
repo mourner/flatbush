@@ -129,7 +129,7 @@ Flatbush.prototype = {
                 if (minX > this.data[pos++]) continue; // minX > nodeMaxX
                 if (minY > this.data[pos++]) continue; // minY > nodeMaxY
 
-                if (index < this._numItems * 5) {
+                if (nodeIndex < this._numItems * 5) {
                     visitFn(index); // leaf item
 
                 } else {

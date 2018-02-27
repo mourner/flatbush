@@ -16,7 +16,7 @@ var coords = [];
 for (var i = 0; i < N; i++) addRandomBox(coords, 1);
 
 console.time('flatbush');
-var index = flatbush(N, 64);
+var index = flatbush(N, 16);
 for (i = 0; i < coords.length; i += 4) {
     index.add(
         coords[i],
@@ -28,7 +28,7 @@ index.finish();
 // console.log(index.data);
 console.timeEnd('flatbush');
 
-var K = 10000;
+var K = 1000;
 
 var boxes100 = [];
 var boxes10 = [];

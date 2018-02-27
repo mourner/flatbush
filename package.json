@@ -4,7 +4,8 @@
   "description": "Fast static spatial index for rectangles",
   "main": "index.js",
   "scripts": {
-    "test": "eslint index.js debug.js"
+    "pretest": "eslint *.js",
+    "test": "tape test.js"
   },
   "repository": {
     "type": "git",
@@ -29,6 +30,7 @@
   "homepage": "https://github.com/mourner/flatbush#readme",
   "devDependencies": {
     "eslint": "^4.18.1",
-    "eslint-config-mourner": "^2.0.3"
+    "eslint-config-mourner": "^2.0.3",
+    "tape": "^4.9.0"
   }
 }
