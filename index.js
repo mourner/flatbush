@@ -22,6 +22,7 @@ function Flatbush(numItems, nodeSize, hilbertOrder) {
 
     this.data = new Float64Array(numNodes * 5);
     this._hilbertValues = new Uint32Array(numItems);
+    this._levelBoundaries = {};
 
     this._numAdded = 0;
     this._pos = 0;
@@ -64,13 +65,15 @@ Flatbush.prototype = {
         // sort boxes by hilbert value
         sort(this._hilbertValues, this.data, 0, this._numItems - 1);
 
-        var pos = 0; // for reading child nodes
+        var pos = 0; // cursor for reading child nodes
         var numNodes = this._numItems;
 
         do {
             // generate nodes at the next tree level, bottom-up
             var end = pos + 5 * numNodes;
             numNodes = Math.ceil(numNodes / this._nodeSize);
+
+            this._levelBoundaries[this._pos] = true;
 
             while (pos < end) {
                 var nodeMinX = Infinity;
@@ -97,6 +100,38 @@ Flatbush.prototype = {
             }
 
         } while (numNodes !== 1);
+
+        this._levelBoundaries[this._pos] = true;
+    },
+
+    search: function (minX, minY, maxX, maxY, visitFn) {
+        var nodeIndex = this.data.length - 5;
+        var queue = [];
+
+        while (nodeIndex !== undefined) {
+            for (var i = 0; i < this._nodeSize; i++) {
+                var pos = nodeIndex + 5 * i;
+
+                if (i > 0 && this._levelBoundaries[pos]) break;
+
+                var index = this.data[pos++];
+
+                // check if node bbox intersects with query bbox
+                if (maxX < this.data[pos++]) continue; // maxX < nodeMinX
+                if (maxY < this.data[pos++]) continue; // maxY < nodeMinY
+                if (minX > this.data[pos++]) continue; // minX > nodeMaxX
+                if (minY > this.data[pos++]) continue; // minY > nodeMaxY
+
+                if (index < this._numItems * 5) { // leaf item
+                    visitFn(index);
+
+                } else { // node
+                    queue.push(index); // add node to search queue
+                }
+            }
+
+            nodeIndex = queue.pop();
+        }
     }
 };
 
