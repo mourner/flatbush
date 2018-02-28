@@ -1,6 +1,7 @@
 # flatbush
 
 A really fast static **spatial index** for 2D points and rectangles in JavaScript.
+An efficient implementation of the [packed Hilbert R-tree](https://en.wikipedia.org/wiki/Hilbert_R-tree#Packed_Hilbert_R-trees) algorithm.
 
 Enables near-instant spatial queries on a very large number of objects (e.g. millions),
 which is very useful in maps, data visualizations and computational geometry algorithms.
@@ -9,7 +10,7 @@ Similar to [RBush](https://github.com/mourner/rbush), with the following differe
 
 - Static: you can't add/remove items after initial indexing.
 - Faster indexing and search, with lower memory footprint.
-- Index is stored as a flat typed array (which can be [transfered](https://developer.mozilla.org/en-US/docs/Web/API/Transferable)).
+- Index is stored as a single flat typed array (which can be [transfered](https://developer.mozilla.org/en-US/docs/Web/API/Transferable)).
 
 [![Build Status](https://travis-ci.org/mourner/flatbush.svg?branch=master)](https://travis-ci.org/mourner/flatbush)
 [![Simply Awesome](https://img.shields.io/badge/simply-awesome-brightgreen.svg)](https://github.com/mourner/projects)
@@ -17,14 +18,18 @@ Similar to [RBush](https://github.com/mourner/rbush), with the following differe
 ## Example
 
 ```js
-const index = flatbush(1000); // initialize flatbush for 1000 items
+// initialize flatbush for 1000 items
+const index = flatbush(1000);
 
+// fill it with 1000 rectangles
 for (const p of itemsToIndex) {
-    index.add(p.minX, p.minY, p.maxX, p.maxY); // add 1000 rectangles one by one
+    index.add(p.minX, p.minY, p.maxX, p.maxY);
 }
-index.finish(); // magic
 
-// make a bounding box query, providing a visitor function
+// perform the indexing
+index.finish();
+
+// make a bounding box query
 index.search(minX, minY, maxX, maxY, (i) => {
     console.log(`found ${itemsToIndex[i]}`);
 });
