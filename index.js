@@ -7,8 +7,7 @@ function flatbush(numItems, nodeSize) {
 }
 
 function Flatbush(numItems, nodeSize) {
-
-    if (numItems === undefined) throw new Error('Missign constructor argument: numItems.');
+    if (numItems === undefined) throw new Error('Missing required argument: numItems.');
 
     this._numItems = numItems;
     this._nodeSize = nodeSize || 16;
@@ -52,7 +51,7 @@ Flatbush.prototype = {
 
     finish: function () {
         if (this._numAdded !== this._numItems) {
-            throw new Error('The number of items added does not match the number in the constructor.');
+            throw new Error('Added ' + this._numAdded + ' items when expected ' + this._numItems);
         }
 
         var width = this._maxX - this._minX;
@@ -116,6 +115,10 @@ Flatbush.prototype = {
     },
 
     search: function (minX, minY, maxX, maxY, visitFn) {
+        if (this._levelBoundaries[0] === 0) {
+            throw new Error('Data not yet indexed - call index.finish().');
+        }
+
         var nodeIndex = this.data.length - 5;
         var queue = [];
 
