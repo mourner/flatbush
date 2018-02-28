@@ -47,7 +47,7 @@ Adds a given rectangle to the index.
 #### index.finish()
 
 Performs indexing of the added rectangles.
-Their number most match the one provided when creating a `flatbush` object.
+Their number must match the one provided when creating a `flatbush` object.
 
 #### index.search(minX, minY, maxX, maxY, visitorFn)
 
