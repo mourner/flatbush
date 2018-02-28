@@ -36,6 +36,26 @@ index.search(minX, minY, maxX, maxY, (i) => {
 
 ```
 
+## API
+
+#### flatbush(numItems)
+
+Creates a `flatbush` index for storing a given number of items (`numItems`).
+
+#### index.add(minX, minY, maxX, maxY)
+
+Adds a given rectangle to the index.
+
+#### index.finish()
+
+Performs indexing of the added rectangles.
+Their number most match the one provided when creating a `flatbush` object.
+
+#### index.search(minX, minY, maxX, maxY, visitorFn)
+
+Calls `visitorFn(i)` on every item that intersects a given rectangular query,
+where `i` is the index of the item according to the order it was added.
+
 ## Performance
 
 Running `node bench.js`:
