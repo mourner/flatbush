@@ -114,13 +114,14 @@ Flatbush.prototype = {
         this._levelBoundaries[level++] = this._pos;
     },
 
-    search: function (minX, minY, maxX, maxY, visitFn) {
+    search: function (minX, minY, maxX, maxY, filterFn) {
         if (this._levelBoundaries[0] === 0) {
             throw new Error('Data not yet indexed - call index.finish().');
         }
 
         var nodeIndex = this.data.length - 5;
         var queue = [];
+        var results = [];
 
         while (nodeIndex !== undefined) {
             // find the bounds of the current tree level
@@ -142,7 +143,10 @@ Flatbush.prototype = {
                 if (minY > this.data[pos++]) continue; // minY > nodeMaxY
 
                 if (nodeIndex < this._numItems * 5) {
-                    visitFn(index); // leaf item
+                    // leaf item
+                    var add = true;
+                    if (filterFn !== undefined) add = filterFn(index);
+                    if (add) results.push(index);
 
                 } else {
                     queue.push(index); // node; add it to the search queue
@@ -151,6 +155,8 @@ Flatbush.prototype = {
 
             nodeIndex = queue.pop();
         }
+
+        return results;
     }
 };
 

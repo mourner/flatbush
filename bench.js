@@ -41,18 +41,11 @@ index.finish();
 // console.log(index.data);
 console.timeEnd('flatbush');
 
-var results = [];
-
-function empty(i) {
-    results.push(i);
-}
-
 function benchSearch(boxes, name) {
     var id = K + ' searches ' + name;
     console.time(id);
     for (i = 0; i < boxes.length; i += 4) {
-        results = [];
-        index.search(boxes[i], boxes[i + 1], boxes[i + 2], boxes[i + 3], empty);
+        index.search(boxes[i], boxes[i + 1], boxes[i + 2], boxes[i + 3]);
     }
     console.timeEnd(id);
 }
@@ -88,7 +81,7 @@ function benchSearchRBush(boxes, name) {
     var id = K + ' searches ' + name;
     console.time(id);
     for (i = 0; i < boxes2.length; i++) {
-        results = rbushIndex.search(boxes2[i]);
+        rbushIndex.search(boxes2[i]);
     }
     console.timeEnd(id);
 }
