@@ -1,16 +1,14 @@
 # flatbush
 
-A really fast static **spatial index** for 2D points and rectangles in JavaScript.
-An efficient implementation of the [packed Hilbert R-tree](https://en.wikipedia.org/wiki/Hilbert_R-tree#Packed_Hilbert_R-trees) algorithm.
+A really fast **static spatial index** for 2D points and rectangles in JavaScript.
 
-Enables near-instant spatial queries on a very large number of objects (e.g. millions),
-which is very useful in maps, data visualizations and computational geometry algorithms.
+An efficient implementation of the [packed Hilbert R-tree](https://en.wikipedia.org/wiki/Hilbert_R-tree#Packed_Hilbert_R-trees) algorithm. Enables fast spatial queries on a very large number of objects (e.g. millions), which is very useful in maps, data visualizations and computational geometry algorithms.
 
-Similar to [RBush](https://github.com/mourner/rbush), with the following differences:
+Similar to [RBush](https://github.com/mourner/rbush), with the following key differences:
 
-- Static: you can't add/remove items after initial indexing.
-- Faster indexing and search, with lower memory footprint.
-- Index is stored as a single flat typed array (which can be [transfered](https://developer.mozilla.org/en-US/docs/Web/API/Transferable)).
+- **Static**: you can't add/remove items after initial indexing.
+- **Faster** indexing and search, with much lower **memory** footprint.
+- Index is stored as a single **typed array** (which can be [transfered](https://developer.mozilla.org/en-US/docs/Web/API/Transferable)).
 
 [![Build Status](https://travis-ci.org/mourner/flatbush.svg?branch=master)](https://travis-ci.org/mourner/flatbush)
 [![Simply Awesome](https://img.shields.io/badge/simply-awesome-brightgreen.svg)](https://github.com/mourner/projects)
