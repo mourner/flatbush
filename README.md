@@ -63,13 +63,13 @@ Running `node bench.js`:
 ```
 1000000 rectangles
 
-flatbush: 310.386ms
-1000 searches 10%: 818.892ms
-1000 searches 1%: 155.498ms
-1000 searches 0.01%: 14.835ms
+flatbush: 299.147ms
+1000 searches 10%: 784.722ms
+1000 searches 1%: 113.550ms
+1000 searches 0.01%: 15.212ms
 
-rbush: 1372.663ms
-1000 searches 10%: 1451.644ms
-1000 searches 1%: 233.894ms
-1000 searches 0.01%: 23.553ms
+rbush: 1169.129ms
+1000 searches 10%: 957.165ms
+1000 searches 1%: 188.941ms
+1000 searches 0.01%: 18.105ms
 ```

@@ -4,6 +4,7 @@ var flatbush = require('./');
 var rbush = require('rbush');
 
 var N = 1000000;
+var K = 1000;
 
 console.log(N + ' rectangles');
 
@@ -18,6 +19,15 @@ function addRandomBox(arr, boxSize) {
 var coords = [];
 for (var i = 0; i < N; i++) addRandomBox(coords, 1);
 
+var boxes100 = [];
+var boxes10 = [];
+var boxes1 = [];
+for (i = 0; i < K; i++) {
+    addRandomBox(boxes100, 100 * Math.sqrt(0.1));
+    addRandomBox(boxes10, 10);
+    addRandomBox(boxes1, 1);
+}
+
 console.time('flatbush');
 var index = flatbush(N, 16);
 for (i = 0; i < coords.length; i += 4) {
@@ -31,43 +41,25 @@ index.finish();
 // console.log(index.data);
 console.timeEnd('flatbush');
 
-var K = 1000;
-
-var boxes100 = [];
-var boxes10 = [];
-var boxes1 = [];
-for (i = 0; i < K; i++) {
-    addRandomBox(boxes100, 100 * Math.sqrt(0.1));
-    addRandomBox(boxes10, 10);
-    addRandomBox(boxes1, 1);
-}
-
 var results = [];
 
 function empty(i) {
     results.push(i);
 }
 
-console.time(K + ' searches 10%');
-for (i = 0; i < boxes100.length; i += 4) {
-    results = [];
-    index.search(boxes100[i], boxes100[i + 1], boxes100[i + 2], boxes100[i + 3], empty);
+function benchSearch(boxes, name) {
+    var id = K + ' searches ' + name;
+    console.time(id);
+    for (i = 0; i < boxes.length; i += 4) {
+        results = [];
+        index.search(boxes[i], boxes[i + 1], boxes[i + 2], boxes[i + 3], empty);
+    }
+    console.timeEnd(id);
 }
-console.timeEnd(K + ' searches 10%');
 
-console.time(K + ' searches 1%');
-for (i = 0; i < boxes10.length; i += 4) {
-    results = [];
-    index.search(boxes10[i], boxes10[i + 1], boxes10[i + 2], boxes10[i + 3], empty);
-}
-console.timeEnd(K + ' searches 1%');
-
-console.time(K + ' searches 0.01%');
-for (i = 0; i < boxes1.length; i += 4) {
-    results = [];
-    index.search(boxes1[i], boxes1[i + 1], boxes1[i + 2], boxes1[i + 3], empty);
-}
-console.timeEnd(K + ' searches 0.01%');
+benchSearch(boxes100, '10%');
+benchSearch(boxes10, '1%');
+benchSearch(boxes1, '0.01%');
 
 var dataForRbush = [];
 for (i = 0; i < coords.length; i += 4) {
@@ -79,41 +71,28 @@ for (i = 0; i < coords.length; i += 4) {
     });
 }
 
-function convertBoxes(arr) {
-    var arr2 = [];
-    for (var i = 0; i < arr.length; i += 4) {
-        arr2.push({
-            minX: arr[i],
-            minY: arr[i + 1],
-            maxX: arr[i + 2],
-            maxY: arr[i + 3]
-        });
-    }
-    return arr2;
-}
-
 console.time('rbush');
 var rbushIndex = rbush().load(dataForRbush);
 console.timeEnd('rbush');
 
-var boxes100b = convertBoxes(boxes100);
-var boxes10b = convertBoxes(boxes10);
-var boxes1b = convertBoxes(boxes1);
-
-console.time(K + ' searches 10%');
-for (i = 0; i < boxes100b.length; i++) {
-    results = rbushIndex.search(boxes100b[i]);
+function benchSearchRBush(boxes, name) {
+    var boxes2 = [];
+    for (var i = 0; i < boxes.length; i += 4) {
+        boxes2.push({
+            minX: boxes[i],
+            minY: boxes[i + 1],
+            maxX: boxes[i + 2],
+            maxY: boxes[i + 3]
+        });
+    }
+    var id = K + ' searches ' + name;
+    console.time(id);
+    for (i = 0; i < boxes2.length; i++) {
+        results = rbushIndex.search(boxes2[i]);
+    }
+    console.timeEnd(id);
 }
-console.timeEnd(K + ' searches 10%');
 
-console.time(K + ' searches 1%');
-for (i = 0; i < boxes10b.length; i++) {
-    results = rbushIndex.search(boxes10b[i]);
-}
-console.timeEnd(K + ' searches 1%');
-
-console.time(K + ' searches 0.01%');
-for (i = 0; i < boxes1b.length; i++) {
-    results = rbushIndex.search(boxes1b[i]);
-}
-console.timeEnd(K + ' searches 0.01%');
+benchSearchRBush(boxes100, '10%');
+benchSearchRBush(boxes10, '1%');
+benchSearchRBush(boxes1, '0.01%');
