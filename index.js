@@ -121,14 +121,10 @@ Flatbush.prototype = {
 
         while (nodeIndex !== undefined) {
             // find the bounds of the current tree level
-            var end;
-            for (var i = 0; i < this._levelBoundaries.length; i++) {
-                end = this._levelBoundaries[i];
-                if (end > nodeIndex) break;
-            }
+            var end = upperBound(nodeIndex, this._levelBoundaries);
 
             // search through child nodes
-            for (i = 0; i < this._nodeSize; i++) {
+            for (var i = 0; i < this._nodeSize; i++) {
                 var pos = nodeIndex + 5 * i;
 
                 // stop if we reached the end of the tree level
@@ -154,6 +150,21 @@ Flatbush.prototype = {
         }
     }
 };
+
+// binary search for the first value in the array bigger than the given
+function upperBound(value, arr) {
+    var i = 0;
+    var j = arr.length - 1;
+    while (i < j) {
+        var m = (i + j) >> 1;
+        if (arr[m] > value) {
+            j = m;
+        } else {
+            i = m + 1;
+        }
+    }
+    return arr[i];
+}
 
 // custom quicksort that sorts bbox data alongside the hilbert values
 function sort(values, boxes, left, right) {
