@@ -48,13 +48,15 @@ test('indexes a bunch of rectangles', function (t) {
 test('performs bbox search', function (t) {
     var index = createIndex();
 
+    var ids = index.search(40, 40, 60, 60);
+
     var results = [];
-    index.search(40, 40, 60, 60, function (i) {
-        results.push(data[4 * i]);
-        results.push(data[4 * i + 1]);
-        results.push(data[4 * i + 2]);
-        results.push(data[4 * i + 3]);
-    });
+    for (var i = 0; i < ids.length; i++) {
+        results.push(data[4 * ids[i]]);
+        results.push(data[4 * ids[i] + 1]);
+        results.push(data[4 * ids[i] + 2]);
+        results.push(data[4 * ids[i] + 3]);
+    }
 
     t.same(results, [57, 59, 58, 59, 48, 53, 52, 56, 43, 41, 47, 43, 40, 42, 43, 43]);
 

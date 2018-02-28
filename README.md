@@ -20,7 +20,7 @@ Similar to [RBush](https://github.com/mourner/rbush), with the following key dif
 const index = flatbush(1000);
 
 // fill it with 1000 rectangles
-for (const p of itemsToIndex) {
+for (const p of items) {
     index.add(p.minX, p.minY, p.maxX, p.maxY);
 }
 
@@ -28,9 +28,7 @@ for (const p of itemsToIndex) {
 index.finish();
 
 // make a bounding box query
-index.search(minX, minY, maxX, maxY, (i) => {
-    console.log(`found ${itemsToIndex[i]}`);
-});
+var found = index.search(minX, minY, maxX, maxY).map((i) => items[i]);
 
 ```
 
@@ -49,10 +47,20 @@ Adds a given rectangle to the index.
 Performs indexing of the added rectangles.
 Their number most match the one provided when creating a `flatbush` object.
 
-#### index.search(minX, minY, maxX, maxY, visitorFn)
+#### index.search(minX, minY, maxX, maxY[, filterFn])
 
-Calls `visitorFn(i)` on every item that intersects a given rectangular query,
-where `i` is the index of the item according to the order it was added.
+Returns an array of indices of items in a given bounding box.
+
+```js
+var ids = index.search(10, 10, 20, 20);
+```
+
+If given a `filterFn`, calls it on every found item (passing an item index)
+and only includes it if the function returned a truthy value.
+
+```js
+var ids = index.search(10, 10, 20, 20, (i) => items[i].foo === 'bar');
+```
 
 ## Performance
 
