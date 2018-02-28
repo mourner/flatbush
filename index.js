@@ -60,8 +60,8 @@ Flatbush.prototype = {
 
         // map item coordinates into Hilbert coordinate space and calculate Hilbert values
         for (var i = 0; i < this._numItems; i++) {
-            var x = Math.floor(hilbertMax * this.data[5 * i + 1] / width);
-            var y = Math.floor(hilbertMax * this.data[5 * i + 2] / height);
+            var x = Math.floor(hilbertMax * (this.data[5 * i + 1] - this._minX) / width);
+            var y = Math.floor(hilbertMax * (this.data[5 * i + 2] - this._minY) / height);
             this._hilbertValues[i] = hilbert(x, y);
         }
 
