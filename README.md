@@ -1,10 +1,18 @@
 # flatbush
 
-A really fast static spatial index for 2D rectangles. Similar to [rbush](https://github.com/mourner/rbush), with the following differences:
+A really fast static **spatial index** for 2D points and rectangles in JavaScript.
 
-- Static: you can't add/remove items.
-- Much faster indexing, with lower memory footprint.
+Enables near-instant spatial queries on a very large number of objects (e.g. millions),
+which is very useful in maps, data visualizations and computational geometry algorithms.
+
+Similar to [RBush](https://github.com/mourner/rbush), with the following differences:
+
+- Static: you can't add/remove items after initial indexing.
+- Faster indexing and search, with lower memory footprint.
 - Index is stored as a flat typed array (which can be [transfered](https://developer.mozilla.org/en-US/docs/Web/API/Transferable)).
+
+[![Build Status](https://travis-ci.org/mourner/flatbush.svg?branch=master)](https://travis-ci.org/mourner/flatbush)
+[![Simply Awesome](https://img.shields.io/badge/simply-awesome-brightgreen.svg)](https://github.com/mourner/projects)
 
 ## Example
 
