@@ -4,12 +4,11 @@
   "description": "Fast static spatial index for rectangles",
   "main": "flatbush.js",
   "module": "index.js",
-  "jsnext:main": "index.js",
   "unpkg": "flatbush.min.js",
   "jsdelivr": "flatbush.min.js",
   "scripts": {
     "pretest": "eslint index.js test.js bench.js",
-    "test": "tape -r @std/esm test.js",
+    "test": "node -r @std/esm test.js",
     "bench": "node -r @std/esm bench.js",
     "build": "rollup index.js --o flatbush.js -f umd --name flatbush && uglifyjs flatbush.js -c -m -o flatbush.min.js",
     "prepare": "npm run build"
