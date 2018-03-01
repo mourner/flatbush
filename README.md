@@ -34,9 +34,13 @@ var found = index.search(minX, minY, maxX, maxY).map((i) => items[i]);
 
 ## API
 
-#### flatbush(numItems)
+#### flatbush(numItems[, nodeSize, ArrayType])
 
-Creates a `flatbush` index for storing a given number of items (`numItems`).
+Creates a `flatbush` index that will hold a given number of items (`numItems`). Additionally accepts:
+
+- `nodeSize`: size of the tree node (16 by default); experiment with different values for best performance.
+- `ArrayType`: the array type used for tree storage (`Float64Array` by default);
+other types may be faster in certain cases (e.g. `Int32Array` when your data is integer)
 
 #### index.add(minX, minY, maxX, maxY)
 
