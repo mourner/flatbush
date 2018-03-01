@@ -1,8 +1,5 @@
-'use strict';
 
-module.exports = flatbush;
-
-function flatbush(numItems, nodeSize, ArrayType) {
+export default function flatbush(numItems, nodeSize, ArrayType) {
     return new Flatbush(numItems, nodeSize, ArrayType);
 }
 

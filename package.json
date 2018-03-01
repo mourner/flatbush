@@ -2,17 +2,33 @@
   "name": "flatbush",
   "version": "1.2.0",
   "description": "Fast static spatial index for rectangles",
-  "main": "index.js",
+  "main": "flatbush.js",
+  "module": "index.js",
+  "jsnext:main": "index.js",
+  "unpkg": "flatbush.min.js",
+  "jsdelivr": "flatbush.min.js",
   "scripts": {
-    "pretest": "eslint *.js",
-    "test": "tape test.js"
+    "pretest": "eslint index.js test.js bench.js",
+    "test": "tape -r @std/esm test.js",
+    "bench": "node -r @std/esm bench.js",
+    "build": "rollup index.js --o flatbush.js -f umd --name flatbush && uglifyjs flatbush.js -c -m -o flatbush.min.js",
+    "prepare": "npm run build"
   },
+  "files": [
+    "index.js",
+    "flatbush.js",
+    "flatbush.min.js"
+  ],
+  "@std/esm": "js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mourner/flatbush.git"
   },
   "eslintConfig": {
-    "extends": "mourner"
+    "extends": "mourner",
+    "parserOptions": {
+      "sourceType": "module"
+    }
   },
   "keywords": [
     "geometry",
@@ -29,9 +45,12 @@
   },
   "homepage": "https://github.com/mourner/flatbush#readme",
   "devDependencies": {
+    "@std/esm": "^0.23.3",
     "eslint": "^4.18.1",
     "eslint-config-mourner": "^2.0.3",
     "rbush": "^2.0.2",
-    "tape": "^4.9.0"
+    "rollup": "^0.56.3",
+    "tape": "^4.9.0",
+    "uglify-js": "^3.3.12"
   }
 }

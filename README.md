@@ -32,6 +32,24 @@ var found = index.search(minX, minY, maxX, maxY).map((i) => items[i]);
 
 ```
 
+## Install
+
+Install using NPM (`npm install flatbush`) or Yarn (`yarn add flatbush`), then either:
+
+```js
+// require in Node / Browserify
+var flatbush = require('flatbush');
+
+// or import as a ES module
+import flatbush from 'flatbush';
+```
+
+Or use a browser build directly:
+
+```html
+<script src="https://unpkg.com/flatbush@1.3.0/flatbush.min.js"></script>
+```
+
 ## API
 
 #### flatbush(numItems[, nodeSize, ArrayType])
@@ -68,7 +86,7 @@ var ids = index.search(10, 10, 20, 20, (i) => items[i].foo === 'bar');
 
 ## Performance
 
-Running `node bench.js`:
+Running `npm run bench`:
 
 ```
 1000000 rectangles

@@ -1,6 +1,5 @@
-'use strict';
 
-var flatbush = require('./');
+var flatbush = require('./index.js').default;
 var test = require('tape').test;
 
 var data = [
