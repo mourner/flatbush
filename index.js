@@ -2,15 +2,16 @@
 
 module.exports = flatbush;
 
-function flatbush(numItems, nodeSize) {
-    return new Flatbush(numItems, nodeSize);
+function flatbush(numItems, nodeSize, ArrayType) {
+    return new Flatbush(numItems, nodeSize, ArrayType);
 }
 
-function Flatbush(numItems, nodeSize) {
+function Flatbush(numItems, nodeSize, ArrayType) {
     if (numItems === undefined) throw new Error('Missing required argument: numItems.');
 
     this._numItems = numItems;
     this._nodeSize = nodeSize || 16;
+    ArrayType = ArrayType || Float64Array;
 
     // calculate the total number of nodes in the R-tree to allocate space for
     var n = numItems;
@@ -22,7 +23,7 @@ function Flatbush(numItems, nodeSize) {
         numLevels++;
     } while (n !== 1);
 
-    this.data = new Float64Array(numNodes * 5);
+    this.data = new ArrayType(numNodes * 5);
     this._hilbertValues = new Uint32Array(numItems);
     this._levelBoundaries = new Uint32Array(numLevels);
 
