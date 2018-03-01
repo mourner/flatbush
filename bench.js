@@ -1,6 +1,5 @@
-'use strict';
 
-var flatbush = require('./');
+var flatbush = require('./index.js').default;
 var rbush = require('rbush');
 
 var N = 1000000;
