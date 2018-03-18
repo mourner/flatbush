@@ -91,13 +91,13 @@ Running `npm run bench`:
 ```
 1000000 rectangles
 
-flatbush: 299.147ms
-1000 searches 10%: 784.722ms
-1000 searches 1%: 113.550ms
-1000 searches 0.01%: 15.212ms
+flatbush: 268.348ms
+10000 searches 10%: 7156.947ms
+10000 searches 1%: 809.680ms
+10000 searches 0.01%: 90.744ms
 
-rbush: 1169.129ms
-1000 searches 10%: 957.165ms
-1000 searches 1%: 188.941ms
-1000 searches 0.01%: 18.105ms
+rbush: 1298.968ms
+10000 searches 10%: 10559.077ms
+10000 searches 1%: 1583.737ms
+10000 searches 0.01%: 191.569ms
 ```
