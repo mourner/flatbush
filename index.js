@@ -177,7 +177,7 @@ function upperBound(value, arr) {
 function sort(values, boxes, left, right) {
     if (left >= right) return;
 
-    var pivot = values[left];
+    var pivot = values[(left + right) >> 1];
     var i = left - 1;
     var j = right + 1;
 
