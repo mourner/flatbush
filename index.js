@@ -177,31 +177,19 @@ function upperBound(value, arr) {
 function sort(values, boxes, left, right) {
     if (left >= right) return;
 
-    var i = left + 1;
-    var j = right;
+    var pivot = values[left];
+    var i = left - 1;
+    var j = right + 1;
 
-    swap(values, boxes, (left + right) >> 1, i);
-    if (values[left] > values[right]) swap(values, boxes, left, right);
-    if (values[i] > values[right]) swap(values, boxes, i, right);
-    if (values[left] > values[i]) swap(values, boxes, left, i);
-
-    var temp = values[i];
     while (true) {
-        do i++; while (values[i] < temp);
-        do j--; while (values[j] > temp);
-        if (j < i) break;
+        do i++; while (values[i] < pivot);
+        do j--; while (values[j] > pivot);
+        if (i >= j) break;
         swap(values, boxes, i, j);
     }
-    values[left + 1] = values[j];
-    values[j] = temp;
 
-    if (right - i + 1 >= j - left) {
-        sort(values, boxes, i, right);
-        sort(values, boxes, left, j - 1);
-    } else {
-        sort(values, boxes, left, j - 1);
-        sort(values, boxes, i, right);
-    }
+    sort(values, boxes, left, j);
+    sort(values, boxes, j + 1, right);
 }
 
 // swap two values and two corresponding boxes
