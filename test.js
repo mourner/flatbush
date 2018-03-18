@@ -57,7 +57,9 @@ test('performs bbox search', function (t) {
         results.push(data[4 * ids[i] + 3]);
     }
 
-    t.same(results, [57, 59, 58, 59, 48, 53, 52, 56, 40, 42, 43, 43, 43, 41, 47, 43]);
+    t.same(results.sort(compare), [57, 59, 58, 59, 48, 53, 52, 56, 40, 42, 43, 43, 43, 41, 47, 43].sort(compare));
 
     t.end();
 });
+
+function compare(a, b) { return a - b; }
