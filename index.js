@@ -21,6 +21,7 @@ function Flatbush(numItems, nodeSize, ArrayType) {
     } while (n !== 1);
 
     this.data = new ArrayType(numNodes * 5);
+    this._centers = new ArrayType(numNodes * 2);
     this._hilbertValues = new Uint32Array(numItems);
     this._levelBoundaries = new Uint32Array(numLevels);
 
@@ -52,19 +53,11 @@ Flatbush.prototype = {
             throw new Error('Added ' + this._numAdded + ' items when expected ' + this._numItems);
         }
 
-        var width = this._maxX - this._minX;
-        var height = this._maxY - this._minY;
-        var hilbertMax = (1 << 16) - 1;
-
-        // map item coordinates into Hilbert coordinate space and calculate Hilbert values
         for (var i = 0; i < this._numItems; i++) {
-            var x = Math.floor(hilbertMax * (this.data[5 * i + 1] - this._minX) / width);
-            var y = Math.floor(hilbertMax * (this.data[5 * i + 2] - this._minY) / height);
-            this._hilbertValues[i] = hilbert(x, y);
+            var k = 5 * i;
+            this._centers[2 * i + 0] = (this.data[k + 3] + this.data[k + 1]) / 2;
+            this._centers[2 * i + 1] = (this.data[k + 4] + this.data[k + 2]) / 2;
         }
-
-        // sort items by their Hilbert value (for packing later)
-        sort(this._hilbertValues, this.data, 0, this._numItems - 1);
 
         var pos = 0; // cursor for reading child nodes
         var numNodes = this._numItems;
@@ -72,41 +65,51 @@ Flatbush.prototype = {
 
         do {
             // generate nodes at the next tree level, bottom-up
-            var end = pos + 5 * numNodes;
-            numNodes = Math.ceil(numNodes / this._nodeSize);
+            var numLeafNodes = Math.ceil(numNodes / this._nodeSize);
+            var numVerticalSlices = Math.ceil(Math.sqrt(numLeafNodes));
+            var sliceLen = numVerticalSlices * this._nodeSize;
+            var start = pos / 5;
 
             // mark the start of a new tree level (for checks during search)
             this._levelBoundaries[level++] = this._pos;
 
-            // generate a parent node for each block of consecutive <nodeSize> nodes
-            while (pos < end) {
-                var nodeMinX = Infinity;
-                var nodeMinY = Infinity;
-                var nodeMaxX = -Infinity;
-                var nodeMaxY = -Infinity;
-                var nodeIndex = pos;
+            sort(this._centers, 0, this.data, start, start + numNodes - 1);
 
-                // calculate bbox for the new node
-                for (i = 0; i < this._nodeSize && pos < end; i++) {
-                    pos++; // skip index
-                    var minX = this.data[pos++];
-                    var minY = this.data[pos++];
-                    var maxX = this.data[pos++];
-                    var maxY = this.data[pos++];
-                    if (minX < nodeMinX) nodeMinX = minX;
-                    if (minY < nodeMinY) nodeMinY = minY;
-                    if (maxX > nodeMaxX) nodeMaxX = maxX;
-                    if (maxY > nodeMaxY) nodeMaxY = maxY;
+            for (i = start; i < start + numNodes; i += sliceLen) {
+                var m = Math.min(start + numNodes, i + sliceLen) - 1;
+                sort(this._centers, 1, this.data, i, m);
+
+                // generate a parent node for each block of consecutive <nodeSize> nodes
+                for (var j = i; j <= m; j += this._nodeSize) {
+                    var nodeMinX = Infinity;
+                    var nodeMinY = Infinity;
+                    var nodeMaxX = -Infinity;
+                    var nodeMaxY = -Infinity;
+                    var nodeIndex = pos;
+
+                    // calculate bbox for the new node
+                    for (k = 0; k < this._nodeSize && j + k <= m; k++) {
+                        pos++; // skip index
+                        var minX = this.data[pos++];
+                        var minY = this.data[pos++];
+                        var maxX = this.data[pos++];
+                        var maxY = this.data[pos++];
+                        if (minX < nodeMinX) nodeMinX = minX;
+                        if (minY < nodeMinY) nodeMinY = minY;
+                        if (maxX > nodeMaxX) nodeMaxX = maxX;
+                        if (maxY > nodeMaxY) nodeMaxY = maxY;
+                    }
+
+                    // add the new node to the tree data
+                    this.data[this._pos++] = nodeIndex;
+                    this.data[this._pos++] = nodeMinX;
+                    this.data[this._pos++] = nodeMinY;
+                    this.data[this._pos++] = nodeMaxX;
+                    this.data[this._pos++] = nodeMaxY;
                 }
-
-                // add the new node to the tree data
-                this.data[this._pos++] = nodeIndex;
-                this.data[this._pos++] = nodeMinX;
-                this.data[this._pos++] = nodeMinY;
-                this.data[this._pos++] = nodeMaxX;
-                this.data[this._pos++] = nodeMaxY;
             }
 
+            numNodes = numLeafNodes;
         } while (numNodes !== 1);
 
         this._levelBoundaries[level++] = this._pos;
@@ -173,33 +176,39 @@ function upperBound(value, arr) {
     return arr[i];
 }
 
-// custom quicksort that sorts bbox data alongside the hilbert values
-function sort(values, boxes, left, right) {
+// custom quicksort that sorts bbox data alongside the center values
+function sort(centers, axis, boxes, left, right) {
     if (left >= right) return;
 
-    var pivot = values[(left + right) >> 1];
+    var m = (left + right) >> 1;
+    var pivot = centers[2 * m + axis];
     var i = left - 1;
     var j = right + 1;
 
     while (true) {
-        do i++; while (values[i] < pivot);
-        do j--; while (values[j] > pivot);
+        do i++; while (centers[2 * i + axis] < pivot);
+        do j--; while (centers[2 * j + axis] > pivot);
         if (i >= j) break;
-        swap(values, boxes, i, j);
+        swap(centers, boxes, i, j);
     }
 
-    sort(values, boxes, left, j);
-    sort(values, boxes, j + 1, right);
+    sort(centers, axis, boxes, left, j);
+    sort(centers, axis, boxes, j + 1, right);
 }
 
 // swap two values and two corresponding boxes
-function swap(values, boxes, i, j) {
-    var temp = values[i];
-    values[i] = values[j];
-    values[j] = temp;
+function swap(centers, boxes, i, j) {
+    var k = 2 * i;
+    var m = 2 * j;
+    var x = centers[k];
+    var y = centers[k + 1];
+    centers[k] = centers[m];
+    centers[k + 1] = centers[m + 1];
+    centers[m] = x;
+    centers[m + 1] = y;
 
-    var k = 5 * i;
-    var m = 5 * j;
+    k = 5 * i;
+    m = 5 * j;
 
     var a = boxes[k];
     var b = boxes[k + 1];
@@ -216,52 +225,4 @@ function swap(values, boxes, i, j) {
     boxes[m + 2] = c;
     boxes[m + 3] = d;
     boxes[m + 4] = e;
-}
-
-// Fast Hilbert curve algorithm by http://threadlocalmutex.com/
-// Ported from C++ https://github.com/rawrunprotected/hilbert_curves (public domain)
-function hilbert(x, y) {
-    var a = x ^ y;
-    var b = 0xFFFF ^ a;
-    var c = 0xFFFF ^ (x | y);
-    var d = x & (y ^ 0xFFFF);
-
-    var A = a | (b >> 1);
-    var B = (a >> 1) ^ a;
-    var C = ((c >> 1) ^ (b & (d >> 1))) ^ c;
-    var D = ((a & (c >> 1)) ^ (d >> 1)) ^ d;
-
-    a = A; b = B; c = C; d = D;
-    A = ((a & (a >> 2)) ^ (b & (b >> 2)));
-    B = ((a & (b >> 2)) ^ (b & ((a ^ b) >> 2)));
-    C ^= ((a & (c >> 2)) ^ (b & (d >> 2)));
-    D ^= ((b & (c >> 2)) ^ ((a ^ b) & (d >> 2)));
-
-    a = A; b = B; c = C; d = D;
-    A = ((a & (a >> 4)) ^ (b & (b >> 4)));
-    B = ((a & (b >> 4)) ^ (b & ((a ^ b) >> 4)));
-    C ^= ((a & (c >> 4)) ^ (b & (d >> 4)));
-    D ^= ((b & (c >> 4)) ^ ((a ^ b) & (d >> 4)));
-
-    a = A; b = B; c = C; d = D;
-    C ^= ((a & (c >> 8)) ^ (b & (d >> 8)));
-    D ^= ((b & (c >> 8)) ^ ((a ^ b) & (d >> 8)));
-
-    a = C ^ (C >> 1);
-    b = D ^ (D >> 1);
-
-    var i0 = x ^ y;
-    var i1 = b | (0xFFFF ^ (i0 | a));
-
-    i0 = (i0 | (i0 << 8)) & 0x00FF00FF;
-    i0 = (i0 | (i0 << 4)) & 0x0F0F0F0F;
-    i0 = (i0 | (i0 << 2)) & 0x33333333;
-    i0 = (i0 | (i0 << 1)) & 0x55555555;
-
-    i1 = (i1 | (i1 << 8)) & 0x00FF00FF;
-    i1 = (i1 | (i1 << 4)) & 0x0F0F0F0F;
-    i1 = (i1 | (i1 << 2)) & 0x33333333;
-    i1 = (i1 | (i1 << 1)) & 0x55555555;
-
-    return ((i1 << 1) | i0) >>> 0;
 }
