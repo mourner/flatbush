@@ -11,6 +11,7 @@ Similar to [RBush](https://github.com/mourner/rbush), with the following key dif
 - Index is stored as a single **typed array** (which can be [transfered](https://developer.mozilla.org/en-US/docs/Web/API/Transferable)).
 
 [![Build Status](https://travis-ci.org/mourner/flatbush.svg?branch=master)](https://travis-ci.org/mourner/flatbush)
+[![gzipped size: 1.4 kB](https://img.shields.io/badge/gzipped%20size-1.4%20kB-brightgreen.svg)](https://unpkg.com/flatbush)
 [![Simply Awesome](https://img.shields.io/badge/simply-awesome-brightgreen.svg)](https://github.com/mourner/projects)
 
 ## Example
@@ -28,7 +29,7 @@ for (const p of items) {
 index.finish();
 
 // make a bounding box query
-var found = index.search(minX, minY, maxX, maxY).map((i) => items[i]);
+const found = index.search(minX, minY, maxX, maxY).map((i) => items[i]);
 
 ```
 
@@ -38,7 +39,7 @@ Install using NPM (`npm install flatbush`) or Yarn (`yarn add flatbush`), then e
 
 ```js
 // require in Node / Browserify
-var flatbush = require('flatbush');
+const flatbush = require('flatbush');
 
 // or import as a ES module
 import flatbush from 'flatbush';
@@ -74,14 +75,14 @@ Their number must match the one provided when creating a `flatbush` object.
 Returns an array of indices of items in a given bounding box.
 
 ```js
-var ids = index.search(10, 10, 20, 20);
+const ids = index.search(10, 10, 20, 20);
 ```
 
 If given a `filterFn`, calls it on every found item (passing an item index)
 and only includes it if the function returned a truthy value.
 
 ```js
-var ids = index.search(10, 10, 20, 20, (i) => items[i].foo === 'bar');
+const ids = index.search(10, 10, 20, 20, (i) => items[i].foo === 'bar');
 ```
 
 ## Performance
