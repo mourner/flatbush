@@ -71,11 +71,11 @@ export default class Flatbush {
 
         // map item centers into Hilbert coordinate space and calculate Hilbert values
         for (let i = 0; i < this.numItems; i++) {
-            let k = 5 * i + 1;
-            const minX = this.data[k++];
-            const minY = this.data[k++];
-            const maxX = this.data[k++];
-            const maxY = this.data[k++];
+            let pos = 5 * i + 1;
+            const minX = this.data[pos++];
+            const minY = this.data[pos++];
+            const maxX = this.data[pos++];
+            const maxY = this.data[pos++];
             const x = Math.floor(hilbertMax * ((minX + maxX) / 2 - this.minX) / width);
             const y = Math.floor(hilbertMax * ((minY + maxY) / 2 - this.minY) / height);
             hilbertValues[i] = hilbert(x, y);
@@ -84,12 +84,9 @@ export default class Flatbush {
         // sort items by their Hilbert value (for packing later)
         sort(hilbertValues, this.data, 0, this.numItems - 1);
 
-        let pos = 0; // cursor for reading child nodes
-        let numNodes = this.numItems;
-        do {
-            // generate nodes at the next tree level, bottom-up
-            const end = pos + 5 * numNodes;
-            numNodes = Math.ceil(numNodes / this.nodeSize);
+        // generate nodes at each tree level, bottom-up
+        for (let i = 0, pos = 0; i < this._levelBounds.length - 1; i++) {
+            const end = this._levelBounds[i];
 
             // generate a parent node for each block of consecutive <nodeSize> nodes
             while (pos < end) {
@@ -132,23 +129,18 @@ export default class Flatbush {
         const results = [];
 
         while (nodeIndex !== undefined) {
-            // find the bounds of the current tree level
-            const end = upperBound(nodeIndex, this._levelBounds);
+            // find the end index of the node
+            const end = Math.min(nodeIndex + this.nodeSize * 5, upperBound(nodeIndex, this._levelBounds));
 
             // search through child nodes
-            for (let i = 0; i < this.nodeSize; i++) {
-                let pos = nodeIndex + 5 * i;
-
-                // stop if we reached the end of the tree level
-                if (i > 0 && pos >= end) break;
-
-                const index = this.data[pos++];
+            for (let pos = nodeIndex; pos < end; pos += 5) {
+                const index = this.data[pos];
 
                 // check if node bbox intersects with query bbox
-                if (maxX < this.data[pos++]) continue; // maxX < nodeMinX
-                if (maxY < this.data[pos++]) continue; // maxY < nodeMinY
-                if (minX > this.data[pos++]) continue; // minX > nodeMaxX
-                if (minY > this.data[pos++]) continue; // minY > nodeMaxY
+                if (maxX < this.data[pos + 1]) continue; // maxX < nodeMinX
+                if (maxY < this.data[pos + 2]) continue; // maxY < nodeMinY
+                if (minX > this.data[pos + 3]) continue; // minX > nodeMaxX
+                if (minY > this.data[pos + 4]) continue; // minY > nodeMaxY
 
                 if (nodeIndex < this.numItems * 5) {
                     if (filterFn === undefined || filterFn(index)) {
