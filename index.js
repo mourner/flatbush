@@ -22,8 +22,6 @@ function Flatbush(numItems, nodeSize, ArrayType) {
     } while (n !== 1);
 
     this.data = new ArrayType(numNodes * 5);
-    this._hilbertValues = new Uint32Array(numItems);
-
     this._numAdded = 0;
     this._pos = 0;
 
@@ -54,17 +52,18 @@ Flatbush.prototype = {
 
         var width = this._maxX - this._minX;
         var height = this._maxY - this._minY;
+        var hilbertValues = new Uint32Array(this._numItems);
         var hilbertMax = (1 << 16) - 1;
 
         // map item coordinates into Hilbert coordinate space and calculate Hilbert values
         for (var i = 0; i < this._numItems; i++) {
             var x = Math.floor(hilbertMax * (this.data[5 * i + 1] - this._minX) / width);
             var y = Math.floor(hilbertMax * (this.data[5 * i + 2] - this._minY) / height);
-            this._hilbertValues[i] = hilbert(x, y);
+            hilbertValues[i] = hilbert(x, y);
         }
 
         // sort items by their Hilbert value (for packing later)
-        sort(this._hilbertValues, this.data, 0, this._numItems - 1);
+        sort(hilbertValues, this.data, 0, this._numItems - 1);
 
         var pos = 0; // cursor for reading child nodes
         var numNodes = this._numItems;
