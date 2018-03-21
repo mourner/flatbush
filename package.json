@@ -11,7 +11,7 @@
     "test": "node -r @std/esm test.js",
     "bench": "node -r @std/esm bench.js",
     "build": "rollup index.js --o flatbush.js -f umd --name Flatbush && uglifyjs flatbush.js -c -m -o flatbush.min.js",
-    "prepare": "npm run build"
+    "prepublishOnly": "npm run build"
   },
   "files": [
     "index.js",
@@ -54,6 +54,6 @@
     "rbush": "^2.0.2",
     "rollup": "^0.56.3",
     "tape": "^4.9.0",
-    "uglify-js": "^3.3.12"
+    "uglify-es": "^3.3.9"
   }
 }
