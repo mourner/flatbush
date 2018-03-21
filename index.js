@@ -20,10 +20,14 @@ export default class Flatbush {
         } while (n !== 1);
 
         if (data) {
-            if (!(data instanceof ArrayBuffer))
-                throw new Error('Data argument must be an instance of ArrayBuffer.');
+            if (data instanceof ArrayBuffer) {
+                this.data = new this.ArrayType(data);
+            } else if (data instanceof ArrayType) {
+                this.data = data;
+            } else {
+                throw new Error('Data must be an instance of ' + ArrayType.name + ' or ArrayBuffer.');
+            }
 
-            this.data = new this.ArrayType(data);
             this._numAdded = numItems;
             this._pos = numNodes * 5;
             this.minX = this.data[this._pos - 4];
