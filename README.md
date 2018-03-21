@@ -102,13 +102,13 @@ Running `npm run bench` with Node v8.10.0:
 ```
 1000000 rectangles
 
-flatbush: 267.755ms
-1000 searches 10%: 795.912ms
-1000 searches 1%: 97.889ms
-1000 searches 0.01%: 9.262ms
+flatbush: 252.311ms
+1000 searches 10%: 624.059ms
+1000 searches 1%: 76.290ms
+1000 searches 0.01%: 8.923ms
 
-rbush: 1207.313ms
-1000 searches 10%: 949.469ms
-1000 searches 1%: 173.267ms
-1000 searches 0.01%: 17.580ms
+rbush: 1239.848ms
+1000 searches 10%: 973.296ms
+1000 searches 1%: 180.831ms
+1000 searches 0.01%: 17.746ms
 ```

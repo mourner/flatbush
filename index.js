@@ -134,7 +134,7 @@ export default class Flatbush {
 
             // search through child nodes
             for (let pos = nodeIndex; pos < end; pos += 5) {
-                const index = this.data[pos];
+                const index = this.data[pos] | 0;
 
                 // check if node bbox intersects with query bbox
                 if (maxX < this.data[pos + 1]) continue; // maxX < nodeMinX
