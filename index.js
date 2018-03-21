@@ -69,10 +69,15 @@ export default class Flatbush {
         const hilbertValues = new Uint32Array(this.numItems);
         const hilbertMax = (1 << 16) - 1;
 
-        // map item coordinates into Hilbert coordinate space and calculate Hilbert values
+        // map item centers into Hilbert coordinate space and calculate Hilbert values
         for (let i = 0; i < this.numItems; i++) {
-            const x = Math.floor(hilbertMax * (this.data[5 * i + 1] - this.minX) / width);
-            const y = Math.floor(hilbertMax * (this.data[5 * i + 2] - this.minY) / height);
+            let k = 5 * i + 1;
+            const minX = this.data[k++];
+            const minY = this.data[k++];
+            const maxX = this.data[k++];
+            const maxY = this.data[k++];
+            const x = Math.floor(hilbertMax * ((minX + maxX) / 2 - this.minX) / width);
+            const y = Math.floor(hilbertMax * ((minY + maxY) / 2 - this.minY) / height);
             hilbertValues[i] = hilbert(x, y);
         }
 
@@ -114,8 +119,7 @@ export default class Flatbush {
                 this.data[this._pos++] = nodeMaxX;
                 this.data[this._pos++] = nodeMaxY;
             }
-
-        } while (numNodes !== 1);
+        }
     }
 
     search(minX, minY, maxX, maxY, filterFn) {
