@@ -6,9 +6,9 @@ export default function flatbush(numItems, nodeSize, ArrayType, data) {
 function Flatbush(numItems, nodeSize, ArrayType, data) {
     if (numItems === undefined) throw new Error('Missing required argument: numItems.');
 
-    this._numItems = numItems;
-    this._nodeSize = nodeSize || 16;
-    ArrayType = ArrayType || Float64Array;
+    this.numItems = numItems;
+    this.nodeSize = nodeSize || 16;
+    this.ArrayType = ArrayType || Float64Array;
 
     // calculate the total number of nodes in the R-tree to allocate space for
     // and the index of each tree level (used in search later)
@@ -16,7 +16,7 @@ function Flatbush(numItems, nodeSize, ArrayType, data) {
     var numNodes = n;
     this._levelBounds = [n * 5];
     do {
-        n = Math.ceil(n / this._nodeSize);
+        n = Math.ceil(n / this.nodeSize);
         numNodes += n;
         this._levelBounds.push(numNodes * 5);
     } while (n !== 1);
@@ -24,11 +24,11 @@ function Flatbush(numItems, nodeSize, ArrayType, data) {
     if (data) {
         if (!(data instanceof ArrayBuffer))
             throw new Error('Data argument must be an instance of ArrayBuffer.');
-        this.data = new ArrayType(data);
+        this.data = new this.ArrayType(data);
         this._numAdded = numItems;
         this._pos = numNodes * 5;
     } else {
-        this.data = new ArrayType(numNodes * 5);
+        this.data = new this.ArrayType(numNodes * 5);
         this._numAdded = 0;
         this._pos = 0;
     }
@@ -54,31 +54,31 @@ Flatbush.prototype = {
     },
 
     finish: function () {
-        if (this._numAdded !== this._numItems) {
-            throw new Error('Added ' + this._numAdded + ' items when expected ' + this._numItems);
+        if (this._numAdded !== this.numItems) {
+            throw new Error('Added ' + this._numAdded + ' items when expected ' + this.numItems);
         }
 
         var width = this._maxX - this._minX;
         var height = this._maxY - this._minY;
-        var hilbertValues = new Uint32Array(this._numItems);
+        var hilbertValues = new Uint32Array(this.numItems);
         var hilbertMax = (1 << 16) - 1;
 
         // map item coordinates into Hilbert coordinate space and calculate Hilbert values
-        for (var i = 0; i < this._numItems; i++) {
+        for (var i = 0; i < this.numItems; i++) {
             var x = Math.floor(hilbertMax * (this.data[5 * i + 1] - this._minX) / width);
             var y = Math.floor(hilbertMax * (this.data[5 * i + 2] - this._minY) / height);
             hilbertValues[i] = hilbert(x, y);
         }
 
         // sort items by their Hilbert value (for packing later)
-        sort(hilbertValues, this.data, 0, this._numItems - 1);
+        sort(hilbertValues, this.data, 0, this.numItems - 1);
 
         var pos = 0; // cursor for reading child nodes
-        var numNodes = this._numItems;
+        var numNodes = this.numItems;
         do {
             // generate nodes at the next tree level, bottom-up
             var end = pos + 5 * numNodes;
-            numNodes = Math.ceil(numNodes / this._nodeSize);
+            numNodes = Math.ceil(numNodes / this.nodeSize);
 
             // generate a parent node for each block of consecutive <nodeSize> nodes
             while (pos < end) {
@@ -89,7 +89,7 @@ Flatbush.prototype = {
                 var nodeIndex = pos;
 
                 // calculate bbox for the new node
-                for (i = 0; i < this._nodeSize && pos < end; i++) {
+                for (i = 0; i < this.nodeSize && pos < end; i++) {
                     pos++; // skip index
                     var minX = this.data[pos++];
                     var minY = this.data[pos++];
@@ -126,7 +126,7 @@ Flatbush.prototype = {
             var end = upperBound(nodeIndex, this._levelBounds);
 
             // search through child nodes
-            for (var i = 0; i < this._nodeSize; i++) {
+            for (var i = 0; i < this.nodeSize; i++) {
                 var pos = nodeIndex + 5 * i;
 
                 // stop if we reached the end of the tree level
@@ -140,7 +140,7 @@ Flatbush.prototype = {
                 if (minX > this.data[pos++]) continue; // minX > nodeMaxX
                 if (minY > this.data[pos++]) continue; // minY > nodeMaxY
 
-                if (nodeIndex < this._numItems * 5) {
+                if (nodeIndex < this.numItems * 5) {
                     // leaf item
                     var add = true;
                     if (filterFn !== undefined) add = filterFn(index);
