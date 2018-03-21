@@ -24,19 +24,24 @@ function Flatbush(numItems, nodeSize, ArrayType, data) {
     if (data) {
         if (!(data instanceof ArrayBuffer))
             throw new Error('Data argument must be an instance of ArrayBuffer.');
+
         this.data = new this.ArrayType(data);
         this._numAdded = numItems;
         this._pos = numNodes * 5;
+        this.minX = this.data[this._pos - 4];
+        this.minY = this.data[this._pos - 3];
+        this.maxX = this.data[this._pos - 2];
+        this.maxY = this.data[this._pos - 1];
+
     } else {
         this.data = new this.ArrayType(numNodes * 5);
         this._numAdded = 0;
         this._pos = 0;
+        this.minX = Infinity;
+        this.minY = Infinity;
+        this.maxX = -Infinity;
+        this.maxY = -Infinity;
     }
-
-    this._minX = Infinity;
-    this._minY = Infinity;
-    this._maxX = -Infinity;
-    this._maxY = -Infinity;
 }
 
 Flatbush.prototype = {
@@ -47,10 +52,10 @@ Flatbush.prototype = {
         this.data[this._pos++] = maxX;
         this.data[this._pos++] = maxY;
 
-        if (minX < this._minX) this._minX = minX;
-        if (minY < this._minY) this._minY = minY;
-        if (maxX > this._maxX) this._maxX = maxX;
-        if (maxY > this._maxY) this._maxY = maxY;
+        if (minX < this.minX) this.minX = minX;
+        if (minY < this.minY) this.minY = minY;
+        if (maxX > this.maxX) this.maxX = maxX;
+        if (maxY > this.maxY) this.maxY = maxY;
     },
 
     finish: function () {
@@ -58,15 +63,15 @@ Flatbush.prototype = {
             throw new Error('Added ' + this._numAdded + ' items when expected ' + this.numItems);
         }
 
-        var width = this._maxX - this._minX;
-        var height = this._maxY - this._minY;
+        var width = this.maxX - this.minX;
+        var height = this.maxY - this.minY;
         var hilbertValues = new Uint32Array(this.numItems);
         var hilbertMax = (1 << 16) - 1;
 
         // map item coordinates into Hilbert coordinate space and calculate Hilbert values
         for (var i = 0; i < this.numItems; i++) {
-            var x = Math.floor(hilbertMax * (this.data[5 * i + 1] - this._minX) / width);
-            var y = Math.floor(hilbertMax * (this.data[5 * i + 2] - this._minY) / height);
+            var x = Math.floor(hilbertMax * (this.data[5 * i + 1] - this.minX) / width);
+            var y = Math.floor(hilbertMax * (this.data[5 * i + 2] - this.minY) / height);
             hilbertValues[i] = hilbert(x, y);
         }
 

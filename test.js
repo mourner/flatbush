@@ -66,7 +66,7 @@ test('reconstructs an index from array buffer', function (t) {
     var index = createIndex();
     var index2 = flatbush(data.length / 4, 16, Float64Array, index.data.buffer);
 
-    t.same(index.data, index2.data);
+    t.same(index, index2);
     t.end();
 });
 
