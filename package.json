@@ -1,6 +1,6 @@
 {
   "name": "flatbush",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Fast static spatial index for rectangles",
   "main": "flatbush.js",
   "module": "index.js",
