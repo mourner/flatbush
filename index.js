@@ -1,9 +1,9 @@
 
-export default function flatbush(numItems, nodeSize, ArrayType) {
-    return new Flatbush(numItems, nodeSize, ArrayType);
+export default function flatbush(numItems, nodeSize, ArrayType, data) {
+    return new Flatbush(numItems, nodeSize, ArrayType, data);
 }
 
-function Flatbush(numItems, nodeSize, ArrayType) {
+function Flatbush(numItems, nodeSize, ArrayType, data) {
     if (numItems === undefined) throw new Error('Missing required argument: numItems.');
 
     this._numItems = numItems;
@@ -21,9 +21,17 @@ function Flatbush(numItems, nodeSize, ArrayType) {
         this._levelBounds.push(numNodes * 5);
     } while (n !== 1);
 
-    this.data = new ArrayType(numNodes * 5);
-    this._numAdded = 0;
-    this._pos = 0;
+    if (data) {
+        if (!(data instanceof ArrayBuffer))
+            throw new Error('Data argument must be an instance of ArrayBuffer.');
+        this.data = new ArrayType(data);
+        this._numAdded = numItems;
+        this._pos = numNodes * 5;
+    } else {
+        this.data = new ArrayType(numNodes * 5);
+        this._numAdded = 0;
+        this._pos = 0;
+    }
 
     this._minX = Infinity;
     this._minY = Infinity;
