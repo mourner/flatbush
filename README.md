@@ -8,7 +8,7 @@ Similar to [RBush](https://github.com/mourner/rbush), with the following key dif
 
 - **Static**: you can't add/remove items after initial indexing.
 - **Faster** indexing and search, with much lower **memory** footprint.
-- Index is stored as a single **typed array** (which can be [transfered](https://developer.mozilla.org/en-US/docs/Web/API/Transferable)).
+- Index is stored as a single **typed array** (so you can [transfer](https://developer.mozilla.org/en-US/docs/Web/API/Transferable) it between the main thread and Web Workers).
 
 [![Build Status](https://travis-ci.org/mourner/flatbush.svg?branch=master)](https://travis-ci.org/mourner/flatbush)
 [![gzipped size: 1.5 kB](https://img.shields.io/badge/gzipped%20size-1.5%20kB-brightgreen.svg)](https://unpkg.com/flatbush)
