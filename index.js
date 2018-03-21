@@ -1,47 +1,48 @@
 
-export default function Flatbush(numItems, nodeSize, ArrayType, data) {
-    if (numItems === undefined) throw new Error('Missing required argument: numItems.');
+export default class Flatbush {
 
-    this.numItems = numItems;
-    this.nodeSize = nodeSize || 16;
-    this.ArrayType = ArrayType || Float64Array;
+    constructor(numItems, nodeSize, ArrayType, data) {
+        if (numItems === undefined) throw new Error('Missing required argument: numItems.');
 
-    // calculate the total number of nodes in the R-tree to allocate space for
-    // and the index of each tree level (used in search later)
-    var n = numItems;
-    var numNodes = n;
-    this._levelBounds = [n * 5];
-    do {
-        n = Math.ceil(n / this.nodeSize);
-        numNodes += n;
-        this._levelBounds.push(numNodes * 5);
-    } while (n !== 1);
+        this.numItems = numItems;
+        this.nodeSize = nodeSize || 16;
+        this.ArrayType = ArrayType || Float64Array;
 
-    if (data) {
-        if (!(data instanceof ArrayBuffer))
-            throw new Error('Data argument must be an instance of ArrayBuffer.');
+        // calculate the total number of nodes in the R-tree to allocate space for
+        // and the index of each tree level (used in search later)
+        var n = numItems;
+        var numNodes = n;
+        this._levelBounds = [n * 5];
+        do {
+            n = Math.ceil(n / this.nodeSize);
+            numNodes += n;
+            this._levelBounds.push(numNodes * 5);
+        } while (n !== 1);
 
-        this.data = new this.ArrayType(data);
-        this._numAdded = numItems;
-        this._pos = numNodes * 5;
-        this.minX = this.data[this._pos - 4];
-        this.minY = this.data[this._pos - 3];
-        this.maxX = this.data[this._pos - 2];
-        this.maxY = this.data[this._pos - 1];
+        if (data) {
+            if (!(data instanceof ArrayBuffer))
+                throw new Error('Data argument must be an instance of ArrayBuffer.');
 
-    } else {
-        this.data = new this.ArrayType(numNodes * 5);
-        this._numAdded = 0;
-        this._pos = 0;
-        this.minX = Infinity;
-        this.minY = Infinity;
-        this.maxX = -Infinity;
-        this.maxY = -Infinity;
+            this.data = new this.ArrayType(data);
+            this._numAdded = numItems;
+            this._pos = numNodes * 5;
+            this.minX = this.data[this._pos - 4];
+            this.minY = this.data[this._pos - 3];
+            this.maxX = this.data[this._pos - 2];
+            this.maxY = this.data[this._pos - 1];
+
+        } else {
+            this.data = new this.ArrayType(numNodes * 5);
+            this._numAdded = 0;
+            this._pos = 0;
+            this.minX = Infinity;
+            this.minY = Infinity;
+            this.maxX = -Infinity;
+            this.maxY = -Infinity;
+        }
     }
-}
 
-Flatbush.prototype = {
-    add: function (minX, minY, maxX, maxY) {
+    add(minX, minY, maxX, maxY) {
         this.data[this._pos++] = this._numAdded++;
         this.data[this._pos++] = minX;
         this.data[this._pos++] = minY;
@@ -52,9 +53,9 @@ Flatbush.prototype = {
         if (minY < this.minY) this.minY = minY;
         if (maxX > this.maxX) this.maxX = maxX;
         if (maxY > this.maxY) this.maxY = maxY;
-    },
+    }
 
-    finish: function () {
+    finish() {
         if (this._numAdded !== this.numItems) {
             throw new Error('Added ' + this._numAdded + ' items when expected ' + this.numItems);
         }
@@ -111,9 +112,9 @@ Flatbush.prototype = {
             }
 
         } while (numNodes !== 1);
-    },
+    }
 
-    search: function (minX, minY, maxX, maxY, filterFn) {
+    search(minX, minY, maxX, maxY, filterFn) {
         if (this._levelBounds[0] === 0) {
             throw new Error('Data not yet indexed - call index.finish().');
         }
@@ -157,7 +158,7 @@ Flatbush.prototype = {
 
         return results;
     }
-};
+}
 
 // binary search for the first value in the array bigger than the given
 function upperBound(value, arr) {
