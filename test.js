@@ -1,8 +1,8 @@
 
-var Flatbush = require('./index.js').default;
-var test = require('tape').test;
+const Flatbush = require('./index.js').default;
+const test = require('tape').test;
 
-var data = [
+const data = [
     8, 62, 11, 66, 57, 17, 57, 19, 76, 26, 79, 29, 36, 56, 38, 56, 92, 77, 96, 80, 87, 70, 90, 74,
     43, 41, 47, 43, 0, 58, 2, 62, 76, 86, 80, 89, 27, 13, 27, 15, 71, 63, 75, 67, 25, 2, 27, 2, 87,
     6, 88, 6, 22, 90, 23, 93, 22, 89, 22, 93, 57, 11, 61, 13, 61, 55, 63, 56, 17, 85, 21, 87, 33,
@@ -23,9 +23,9 @@ var data = [
 ];
 
 function createIndex() {
-    var index = new Flatbush(data.length / 4);
+    const index = new Flatbush(data.length / 4);
 
-    for (var i = 0; i < data.length; i += 4) {
+    for (let i = 0; i < data.length; i += 4) {
         index.add(data[i], data[i + 1], data[i + 2], data[i + 3]);
     }
     index.finish();
@@ -35,9 +35,9 @@ function createIndex() {
 
 
 test('indexes a bunch of rectangles', function (t) {
-    var index = createIndex();
+    const index = createIndex();
 
-    var len = index.data.length;
+    const len = index.data.length;
     t.equal(len, 540);
     t.same(index.data.subarray(len - 5, len), [500, 0, 1, 96, 95]);
 
@@ -45,12 +45,12 @@ test('indexes a bunch of rectangles', function (t) {
 });
 
 test('performs bbox search', function (t) {
-    var index = createIndex();
+    const index = createIndex();
 
-    var ids = index.search(40, 40, 60, 60);
+    const ids = index.search(40, 40, 60, 60);
 
-    var results = [];
-    for (var i = 0; i < ids.length; i++) {
+    const results = [];
+    for (let i = 0; i < ids.length; i++) {
         results.push(data[4 * ids[i]]);
         results.push(data[4 * ids[i] + 1]);
         results.push(data[4 * ids[i] + 2]);
@@ -63,8 +63,8 @@ test('performs bbox search', function (t) {
 });
 
 test('reconstructs an index from array buffer', function (t) {
-    var index = createIndex();
-    var index2 = new Flatbush(data.length / 4, 16, Float64Array, index.data.buffer);
+    const index = createIndex();
+    const index2 = new Flatbush(data.length / 4, 16, Float64Array, index.data.buffer);
 
     t.same(index, index2);
     t.end();
