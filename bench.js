@@ -1,5 +1,5 @@
 
-var flatbush = require('./index.js').default;
+var Flatbush = require('./index.js').default;
 var rbush = require('rbush');
 
 var N = 1000000;
@@ -28,7 +28,7 @@ for (i = 0; i < K; i++) {
 }
 
 console.time('flatbush');
-var index = flatbush(N, 16);
+var index = new Flatbush(N, 16);
 for (i = 0; i < coords.length; i += 4) {
     index.add(
         coords[i],

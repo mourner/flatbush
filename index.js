@@ -1,9 +1,5 @@
 
-export default function flatbush(numItems, nodeSize, ArrayType, data) {
-    return new Flatbush(numItems, nodeSize, ArrayType, data);
-}
-
-function Flatbush(numItems, nodeSize, ArrayType, data) {
+export default function Flatbush(numItems, nodeSize, ArrayType, data) {
     if (numItems === undefined) throw new Error('Missing required argument: numItems.');
 
     this.numItems = numItems;

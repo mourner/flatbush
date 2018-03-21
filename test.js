@@ -1,5 +1,5 @@
 
-var flatbush = require('./index.js').default;
+var Flatbush = require('./index.js').default;
 var test = require('tape').test;
 
 var data = [
@@ -23,7 +23,7 @@ var data = [
 ];
 
 function createIndex() {
-    var index = flatbush(data.length / 4);
+    var index = new Flatbush(data.length / 4);
 
     for (var i = 0; i < data.length; i += 4) {
         index.add(data[i], data[i + 1], data[i + 2], data[i + 3]);
@@ -64,7 +64,7 @@ test('performs bbox search', function (t) {
 
 test('reconstructs an index from array buffer', function (t) {
     var index = createIndex();
-    var index2 = flatbush(data.length / 4, 16, Float64Array, index.data.buffer);
+    var index2 = new Flatbush(data.length / 4, 16, Float64Array, index.data.buffer);
 
     t.same(index, index2);
     t.end();
