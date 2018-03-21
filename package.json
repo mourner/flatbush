@@ -10,7 +10,7 @@
     "pretest": "eslint index.js test.js bench.js",
     "test": "node -r @std/esm test.js",
     "bench": "node -r @std/esm bench.js",
-    "build": "rollup index.js --o flatbush.js -f umd --name Flatbush && uglifyjs flatbush.js -c -m -o flatbush.min.js",
+    "build": "rollup -c",
     "prepublishOnly": "npm run build"
   },
   "files": [
@@ -48,12 +48,13 @@
   },
   "homepage": "https://github.com/mourner/flatbush#readme",
   "devDependencies": {
-    "@std/esm": "^0.23.3",
-    "eslint": "^4.18.1",
+    "@std/esm": "^0.25.4",
+    "eslint": "^4.19.0",
     "eslint-config-mourner": "^2.0.3",
     "rbush": "^2.0.2",
-    "rollup": "^0.56.3",
-    "tape": "^4.9.0",
-    "uglify-es": "^3.3.9"
+    "rollup": "^0.57.1",
+    "rollup-plugin-buble": "^0.19.2",
+    "rollup-plugin-uglify": "^3.0.0",
+    "tape": "^4.9.0"
   }
 }
