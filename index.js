@@ -11,18 +11,18 @@ function Flatbush(numItems, nodeSize, ArrayType) {
     ArrayType = ArrayType || Float64Array;
 
     // calculate the total number of nodes in the R-tree to allocate space for
+    // and the index of each tree level (used in search later)
     var n = numItems;
     var numNodes = n;
-    var numLevels = 1;
+    this._levelBounds = [n * 5];
     do {
         n = Math.ceil(n / this._nodeSize);
         numNodes += n;
-        numLevels++;
+        this._levelBounds.push(numNodes * 5);
     } while (n !== 1);
 
     this.data = new ArrayType(numNodes * 5);
     this._hilbertValues = new Uint32Array(numItems);
-    this._levelBoundaries = new Uint32Array(numLevels);
 
     this._numAdded = 0;
     this._pos = 0;
@@ -68,15 +68,10 @@ Flatbush.prototype = {
 
         var pos = 0; // cursor for reading child nodes
         var numNodes = this._numItems;
-        var level = 0;
-
         do {
             // generate nodes at the next tree level, bottom-up
             var end = pos + 5 * numNodes;
             numNodes = Math.ceil(numNodes / this._nodeSize);
-
-            // mark the start of a new tree level (for checks during search)
-            this._levelBoundaries[level++] = this._pos;
 
             // generate a parent node for each block of consecutive <nodeSize> nodes
             while (pos < end) {
@@ -108,12 +103,10 @@ Flatbush.prototype = {
             }
 
         } while (numNodes !== 1);
-
-        this._levelBoundaries[level++] = this._pos;
     },
 
     search: function (minX, minY, maxX, maxY, filterFn) {
-        if (this._levelBoundaries[0] === 0) {
+        if (this._levelBounds[0] === 0) {
             throw new Error('Data not yet indexed - call index.finish().');
         }
 
@@ -123,7 +116,7 @@ Flatbush.prototype = {
 
         while (nodeIndex !== undefined) {
             // find the bounds of the current tree level
-            var end = upperBound(nodeIndex, this._levelBoundaries);
+            var end = upperBound(nodeIndex, this._levelBounds);
 
             // search through child nodes
             for (var i = 0; i < this._nodeSize; i++) {
