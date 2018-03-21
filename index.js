@@ -125,12 +125,13 @@ export default class Flatbush {
         }
 
         let nodeIndex = this.data.length - 5;
+        let level = this._levelBounds.length - 1;
         const queue = [];
         const results = [];
 
         while (nodeIndex !== undefined) {
             // find the end index of the node
-            const end = Math.min(nodeIndex + this.nodeSize * 5, upperBound(nodeIndex, this._levelBounds));
+            const end = Math.min(nodeIndex + this.nodeSize * 5, this._levelBounds[level]);
 
             // search through child nodes
             for (let pos = nodeIndex; pos < end; pos += 5) {
@@ -149,29 +150,16 @@ export default class Flatbush {
 
                 } else {
                     queue.push(index); // node; add it to the search queue
+                    queue.push(level - 1);
                 }
             }
 
+            level = queue.pop();
             nodeIndex = queue.pop();
         }
 
         return results;
     }
-}
-
-// binary search for the first value in the array bigger than the given
-function upperBound(value, arr) {
-    let i = 0;
-    let j = arr.length - 1;
-    while (i < j) {
-        const m = (i + j) >> 1;
-        if (arr[m] > value) {
-            j = m;
-        } else {
-            i = m + 1;
-        }
-    }
-    return arr[i];
 }
 
 // custom quicksort that sorts bbox data alongside the hilbert values
