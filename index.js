@@ -120,7 +120,7 @@ export default class Flatbush {
     }
 
     search(minX, minY, maxX, maxY, filterFn) {
-        if (this._levelBounds[0] === 0) {
+        if (this._pos !== this.data.length) {
             throw new Error('Data not yet indexed - call index.finish().');
         }
 

@@ -34,7 +34,7 @@ function createIndex() {
 }
 
 
-test('indexes a bunch of rectangles', function (t) {
+test('indexes a bunch of rectangles', (t) => {
     const index = createIndex();
 
     const len = index.data.length;
@@ -44,7 +44,7 @@ test('indexes a bunch of rectangles', function (t) {
     t.end();
 });
 
-test('performs bbox search', function (t) {
+test('performs bbox search', (t) => {
     const index = createIndex();
 
     const ids = index.search(40, 40, 60, 60);
@@ -62,11 +62,27 @@ test('performs bbox search', function (t) {
     t.end();
 });
 
-test('reconstructs an index from array buffer', function (t) {
+test('reconstructs an index from array buffer', (t) => {
     const index = createIndex();
     const index2 = new Flatbush(data.length / 4, 16, Float64Array, index.data);
 
     t.same(index, index2);
+    t.end();
+});
+
+test('throws an error if added less items than the index size', (t) => {
+    t.throws(() => {
+        const index = new Flatbush(data.length / 4);
+        index.finish();
+    });
+    t.end();
+});
+
+test('throws an error if searching before indexing', (t) => {
+    t.throws(() => {
+        const index = new Flatbush(data.length / 4);
+        index.search(0, 0, 20, 20);
+    });
     t.end();
 });
 
