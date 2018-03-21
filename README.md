@@ -1,4 +1,4 @@
-# flatbush
+# Flatbush
 
 A really fast **static spatial index** for 2D points and rectangles in JavaScript.
 
@@ -11,14 +11,14 @@ Similar to [RBush](https://github.com/mourner/rbush), with the following key dif
 - Index is stored as a single **typed array** (which can be [transfered](https://developer.mozilla.org/en-US/docs/Web/API/Transferable)).
 
 [![Build Status](https://travis-ci.org/mourner/flatbush.svg?branch=master)](https://travis-ci.org/mourner/flatbush)
-[![gzipped size: 1.4 kB](https://img.shields.io/badge/gzipped%20size-1.4%20kB-brightgreen.svg)](https://unpkg.com/flatbush)
+[![gzipped size: 1.5 kB](https://img.shields.io/badge/gzipped%20size-1.5%20kB-brightgreen.svg)](https://unpkg.com/flatbush)
 [![Simply Awesome](https://img.shields.io/badge/simply-awesome-brightgreen.svg)](https://github.com/mourner/projects)
 
 ## Example
 
 ```js
-// initialize flatbush for 1000 items
-const index = flatbush(1000);
+// initialize Flatbush for 1000 items
+const index = new Flatbush(1000);
 
 // fill it with 1000 rectangles
 for (const p of items) {
@@ -35,31 +35,33 @@ const found = index.search(minX, minY, maxX, maxY).map((i) => items[i]);
 
 ## Install
 
-Install using NPM (`npm install flatbush`) or Yarn (`yarn add flatbush`), then either:
+Install using NPM (`npm install flatbush`) or Yarn (`yarn add flatbush`), then:
 
 ```js
-// require in Node / Browserify
-const flatbush = require('flatbush');
+// import as an ES module
+import Flatbush from 'flatbush';
 
-// or import as a ES module
-import flatbush from 'flatbush';
+// or require in Node / Browserify
+const Flatbush = require('flatbush');
 ```
 
 Or use a browser build directly:
 
 ```html
-<script src="https://unpkg.com/flatbush@1.3.0/flatbush.min.js"></script>
+<script src="https://unpkg.com/flatbush@2.0.0/flatbush.min.js"></script>
 ```
 
 ## API
 
-#### flatbush(numItems[, nodeSize, ArrayType])
+#### new Flatbush(numItems[, nodeSize, ArrayType, data])
 
-Creates a `flatbush` index that will hold a given number of items (`numItems`). Additionally accepts:
+Creates a Flatbush index that will hold a given number of items (`numItems`). Additionally accepts:
 
-- `nodeSize`: size of the tree node (16 by default); experiment with different values for best performance.
+- `nodeSize`: size of the tree node (`16` by default); experiment with different values for best performance.
 - `ArrayType`: the array type used for tree storage (`Float64Array` by default);
-other types may be faster in certain cases (e.g. `Int32Array` when your data is integer)
+other types may be faster in certain cases (e.g. `Int32Array` when your data is integer).
+- `data`: if provided an array or an array buffer from a previously indexed Flatbush object (`index.data` or `index.data.buffer`),
+an index will be recreated from this data (useful for transfering indices between threads).
 
 #### index.add(minX, minY, maxX, maxY)
 
@@ -85,20 +87,28 @@ and only includes it if the function returned a truthy value.
 const ids = index.search(10, 10, 20, 20, (i) => items[i].foo === 'bar');
 ```
 
+#### Properties
+
+- `numItems`: number of items in the index.
+- `nodeSize`: size of the tree node.
+- `ArrayType`: array class used for the index.
+- `minX`, `minY`, `maxX`, `maxY`: bounding box of the data.
+- `data`: typed array that holds the index.
+
 ## Performance
 
-Running `npm run bench`:
+Running `npm run bench` with Node v8.10.0:
 
 ```
 1000000 rectangles
 
-flatbush: 268.348ms
-10000 searches 10%: 7156.947ms
-10000 searches 1%: 809.680ms
-10000 searches 0.01%: 90.744ms
+flatbush: 267.755ms
+1000 searches 10%: 795.912ms
+1000 searches 1%: 97.889ms
+1000 searches 0.01%: 9.262ms
 
-rbush: 1298.968ms
-10000 searches 10%: 10559.077ms
-10000 searches 1%: 1583.737ms
-10000 searches 0.01%: 191.569ms
+rbush: 1207.313ms
+1000 searches 10%: 949.469ms
+1000 searches 1%: 173.267ms
+1000 searches 0.01%: 17.580ms
 ```
