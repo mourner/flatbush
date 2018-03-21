@@ -3,9 +3,10 @@ export default class Flatbush {
 
     constructor(numItems, nodeSize, ArrayType, data) {
         if (numItems === undefined) throw new Error('Missing required argument: numItems.');
+        if (isNaN(numItems) || numItems <= 0) throw new Error('Unpexpected numItems value: ' + numItems);
 
-        this.numItems = numItems;
-        this.nodeSize = nodeSize || 16;
+        this.numItems = +numItems;
+        this.nodeSize = Math.max(+nodeSize || 16, 2);
         this.ArrayType = ArrayType || Float64Array;
 
         // calculate the total number of nodes in the R-tree to allocate space for

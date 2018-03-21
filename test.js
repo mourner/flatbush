@@ -86,4 +86,11 @@ test('throws an error if searching before indexing', (t) => {
     t.end();
 });
 
+test('does not freeze on numItems = 0', {timeout: 100}, (t) => {
+    t.throws(() => {
+        new Flatbush(0); // eslint-disable-line
+    });
+    t.end();
+});
+
 function compare(a, b) { return a - b; }
