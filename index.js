@@ -7,37 +7,54 @@ export default class Flatbush {
 
         this.numItems = +numItems;
         this.nodeSize = Math.max(+nodeSize || 16, 2);
-        this.ArrayType = ArrayType || Float64Array;
 
         // calculate the total number of nodes in the R-tree to allocate space for
         // and the index of each tree level (used in search later)
         let n = numItems;
         let numNodes = n;
-        this._levelBounds = [n * 5];
+        this._levelBounds = [n * 4];
         do {
             n = Math.ceil(n / this.nodeSize);
             numNodes += n;
-            this._levelBounds.push(numNodes * 5);
+            this._levelBounds.push(numNodes * 4);
         } while (n !== 1);
+
+        this.ArrayType = ArrayType || Float64Array;
+        this.IndexArrayType = Float64Array;
+        if (numNodes * 4 < Math.pow(2, 8)) {
+            this.IndexArrayType = Uint8Array;
+        } else if (numNodes * 4 < Math.pow(2, 16)) {
+            this.IndexArrayType = Uint16Array;
+        } else if (numNodes * 4 < Math.pow(2, 32)) {
+            this.IndexArrayType = Uint32Array;
+        }
+        const alignmentMargin = Math.max(0, this.IndexArrayType.BYTES_PER_ELEMENT - 4 * this.ArrayType.BYTES_PER_ELEMENT);
 
         if (data) {
             if (data instanceof ArrayBuffer) {
-                this.data = new this.ArrayType(data);
-            } else if (data instanceof ArrayType) {
                 this.data = data;
             } else {
-                throw new Error('Data must be an instance of ' + ArrayType.name + ' or ArrayBuffer.');
+                throw new Error('Data must be an instance of ArrayBuffer.');
             }
+            this._boxes = new this.ArrayType(this.data, 0, numNodes * 4);
+            this._indices = new this.IndexArrayType(this.data,
+                numNodes * 4 * this.ArrayType.BYTES_PER_ELEMENT + alignmentMargin,
+                numNodes);
 
             this._numAdded = numItems;
-            this._pos = numNodes * 5;
-            this.minX = this.data[this._pos - 4];
-            this.minY = this.data[this._pos - 3];
-            this.maxX = this.data[this._pos - 2];
-            this.maxY = this.data[this._pos - 1];
+            this._pos = numNodes * 4;
+            this.minX = this._boxes[this._pos - 4];
+            this.minY = this._boxes[this._pos - 3];
+            this.maxX = this._boxes[this._pos - 2];
+            this.maxY = this._boxes[this._pos - 1];
 
         } else {
-            this.data = new this.ArrayType(numNodes * 5);
+            this.data = new ArrayBuffer(numNodes * 4 * this.ArrayType.BYTES_PER_ELEMENT +
+                alignmentMargin + numNodes * this.IndexArrayType.BYTES_PER_ELEMENT);
+            this._boxes = new this.ArrayType(this.data, 0, numNodes * 4);
+            this._indices = new this.IndexArrayType(this.data,
+                numNodes * 4 * this.ArrayType.BYTES_PER_ELEMENT + alignmentMargin,
+                numNodes);
             this._numAdded = 0;
             this._pos = 0;
             this.minX = Infinity;
@@ -48,11 +65,11 @@ export default class Flatbush {
     }
 
     add(minX, minY, maxX, maxY) {
-        this.data[this._pos++] = this._numAdded++;
-        this.data[this._pos++] = minX;
-        this.data[this._pos++] = minY;
-        this.data[this._pos++] = maxX;
-        this.data[this._pos++] = maxY;
+        this._indices[this._numAdded] = this._numAdded++;
+        this._boxes[this._pos++] = minX;
+        this._boxes[this._pos++] = minY;
+        this._boxes[this._pos++] = maxX;
+        this._boxes[this._pos++] = maxY;
 
         if (minX < this.minX) this.minX = minX;
         if (minY < this.minY) this.minY = minY;
@@ -72,18 +89,18 @@ export default class Flatbush {
 
         // map item centers into Hilbert coordinate space and calculate Hilbert values
         for (let i = 0; i < this.numItems; i++) {
-            let pos = 5 * i + 1;
-            const minX = this.data[pos++];
-            const minY = this.data[pos++];
-            const maxX = this.data[pos++];
-            const maxY = this.data[pos++];
+            let pos = 4 * i;
+            const minX = this._boxes[pos++];
+            const minY = this._boxes[pos++];
+            const maxX = this._boxes[pos++];
+            const maxY = this._boxes[pos++];
             const x = Math.floor(hilbertMax * ((minX + maxX) / 2 - this.minX) / width);
             const y = Math.floor(hilbertMax * ((minY + maxY) / 2 - this.minY) / height);
             hilbertValues[i] = hilbert(x, y);
         }
 
         // sort items by their Hilbert value (for packing later)
-        sort(hilbertValues, this.data, 0, this.numItems - 1);
+        sort(hilbertValues, this._boxes, this._indices, 0, this.numItems - 1);
 
         // generate nodes at each tree level, bottom-up
         for (let i = 0, pos = 0; i < this._levelBounds.length - 1; i++) {
@@ -99,11 +116,10 @@ export default class Flatbush {
 
                 // calculate bbox for the new node
                 for (let i = 0; i < this.nodeSize && pos < end; i++) {
-                    pos++; // skip index
-                    const minX = this.data[pos++];
-                    const minY = this.data[pos++];
-                    const maxX = this.data[pos++];
-                    const maxY = this.data[pos++];
+                    const minX = this._boxes[pos++];
+                    const minY = this._boxes[pos++];
+                    const maxX = this._boxes[pos++];
+                    const maxY = this._boxes[pos++];
                     if (minX < nodeMinX) nodeMinX = minX;
                     if (minY < nodeMinY) nodeMinY = minY;
                     if (maxX > nodeMaxX) nodeMaxX = maxX;
@@ -111,40 +127,40 @@ export default class Flatbush {
                 }
 
                 // add the new node to the tree data
-                this.data[this._pos++] = nodeIndex;
-                this.data[this._pos++] = nodeMinX;
-                this.data[this._pos++] = nodeMinY;
-                this.data[this._pos++] = nodeMaxX;
-                this.data[this._pos++] = nodeMaxY;
+                this._indices[this._pos >> 2] = nodeIndex;
+                this._boxes[this._pos++] = nodeMinX;
+                this._boxes[this._pos++] = nodeMinY;
+                this._boxes[this._pos++] = nodeMaxX;
+                this._boxes[this._pos++] = nodeMaxY;
             }
         }
     }
 
     search(minX, minY, maxX, maxY, filterFn) {
-        if (this._pos !== this.data.length) {
+        if (this._pos !== this._boxes.length) {
             throw new Error('Data not yet indexed - call index.finish().');
         }
 
-        let nodeIndex = this.data.length - 5;
+        let nodeIndex = this._boxes.length - 4;
         let level = this._levelBounds.length - 1;
         const queue = [];
         const results = [];
 
         while (nodeIndex !== undefined) {
             // find the end index of the node
-            const end = Math.min(nodeIndex + this.nodeSize * 5, this._levelBounds[level]);
+            const end = Math.min(nodeIndex + this.nodeSize * 4, this._levelBounds[level]);
 
             // search through child nodes
-            for (let pos = nodeIndex; pos < end; pos += 5) {
-                const index = this.data[pos] | 0;
+            for (let pos = nodeIndex; pos < end; pos += 4) {
+                const index = this._indices[pos >> 2];
 
                 // check if node bbox intersects with query bbox
-                if (maxX < this.data[pos + 1]) continue; // maxX < nodeMinX
-                if (maxY < this.data[pos + 2]) continue; // maxY < nodeMinY
-                if (minX > this.data[pos + 3]) continue; // minX > nodeMaxX
-                if (minY > this.data[pos + 4]) continue; // minY > nodeMaxY
+                if (maxX < this._boxes[pos]) continue; // maxX < nodeMinX
+                if (maxY < this._boxes[pos + 1]) continue; // maxY < nodeMinY
+                if (minX > this._boxes[pos + 2]) continue; // minX > nodeMaxX
+                if (minY > this._boxes[pos + 3]) continue; // minY > nodeMaxY
 
-                if (nodeIndex < this.numItems * 5) {
+                if (nodeIndex < this.numItems * 4) {
                     if (filterFn === undefined || filterFn(index)) {
                         results.push(index); // leaf item
                     }
@@ -164,7 +180,7 @@ export default class Flatbush {
 }
 
 // custom quicksort that sorts bbox data alongside the hilbert values
-function sort(values, boxes, left, right) {
+function sort(values, boxes, indices, left, right) {
     if (left >= right) return;
 
     const pivot = values[(left + right) >> 1];
@@ -175,37 +191,38 @@ function sort(values, boxes, left, right) {
         do i++; while (values[i] < pivot);
         do j--; while (values[j] > pivot);
         if (i >= j) break;
-        swap(values, boxes, i, j);
+        swap(values, boxes, indices, i, j);
     }
 
-    sort(values, boxes, left, j);
-    sort(values, boxes, j + 1, right);
+    sort(values, boxes, indices, left, j);
+    sort(values, boxes, indices, j + 1, right);
 }
 
 // swap two values and two corresponding boxes
-function swap(values, boxes, i, j) {
+function swap(values, boxes, indices, i, j) {
     const temp = values[i];
     values[i] = values[j];
     values[j] = temp;
 
-    const k = 5 * i;
-    const m = 5 * j;
+    const k = 4 * i;
+    const m = 4 * j;
 
     const a = boxes[k];
     const b = boxes[k + 1];
     const c = boxes[k + 2];
     const d = boxes[k + 3];
-    const e = boxes[k + 4];
     boxes[k] = boxes[m];
     boxes[k + 1] = boxes[m + 1];
     boxes[k + 2] = boxes[m + 2];
     boxes[k + 3] = boxes[m + 3];
-    boxes[k + 4] = boxes[m + 4];
     boxes[m] = a;
     boxes[m + 1] = b;
     boxes[m + 2] = c;
     boxes[m + 3] = d;
-    boxes[m + 4] = e;
+
+    const e = indices[i];
+    indices[i] = indices[j];
+    indices[j] = e;
 }
 
 // Fast Hilbert curve algorithm by http://threadlocalmutex.com/

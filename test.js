@@ -37,9 +37,10 @@ function createIndex() {
 test('indexes a bunch of rectangles', (t) => {
     const index = createIndex();
 
-    const len = index.data.length;
-    t.equal(len, 540);
-    t.same(index.data.subarray(len - 5, len), [500, 0, 1, 96, 95]);
+    const len = index._boxes.length;
+    t.equal(index._boxes.length + index._indices.length, 540);
+    t.same(index._boxes.subarray(len - 4, len), [0, 1, 96, 95]);
+    t.same(index._indices[len / 4 - 1], 400);
 
     t.end();
 });
