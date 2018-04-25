@@ -28,7 +28,7 @@ export default class Flatbush {
         } else if (numNodes * 4 < Math.pow(2, 32)) {
             this.IndexArrayType = Uint32Array;
         }
-        const alignmentMargin = Math.max(0, this.IndexArrayType.BYTES_PER_ELEMENT - 4 * this.ArrayType.BYTES_PER_ELEMENT);
+        const alignmentMargin = (this.IndexArrayType.BYTES_PER_ELEMENT - numNodes * 4 * this.ArrayType.BYTES_PER_ELEMENT % this.IndexArrayType.BYTES_PER_ELEMENT) % this.IndexArrayType.BYTES_PER_ELEMENT;
 
         if (data) {
             if (data instanceof ArrayBuffer) {
