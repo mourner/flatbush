@@ -20,12 +20,9 @@ export default class Flatbush {
         } while (n !== 1);
 
         this.ArrayType = ArrayType || Float64Array;
-        this.IndexArrayType = Uint32Array;
-        if (numNodes * 4 < Math.pow(2, 8)) {
-            this.IndexArrayType = Uint8Array;
-        } else if (numNodes * 4 < Math.pow(2, 16)) {
-            this.IndexArrayType = Uint16Array;
-        }
+        this.IndexArrayType = numNodes < 16384 ? Uint16Array : Uint32Array;
+
+        const nodesByteSize = numNodes * 4 * this.ArrayType.BYTES_PER_ELEMENT;
 
         if (data) {
             if (data instanceof ArrayBuffer) {
@@ -34,9 +31,7 @@ export default class Flatbush {
                 throw new Error('Data must be an instance of ArrayBuffer.');
             }
             this._boxes = new this.ArrayType(this.data, 0, numNodes * 4);
-            this._indices = new this.IndexArrayType(this.data,
-                numNodes * 4 * this.ArrayType.BYTES_PER_ELEMENT,
-                numNodes);
+            this._indices = new this.IndexArrayType(this.data, nodesByteSize, numNodes);
 
             this._numAdded = numItems;
             this._pos = numNodes * 4;
@@ -46,12 +41,9 @@ export default class Flatbush {
             this.maxY = this._boxes[this._pos - 1];
 
         } else {
-            this.data = new ArrayBuffer(numNodes * 4 * this.ArrayType.BYTES_PER_ELEMENT +
-                numNodes * this.IndexArrayType.BYTES_PER_ELEMENT);
+            this.data = new ArrayBuffer(nodesByteSize + numNodes * this.IndexArrayType.BYTES_PER_ELEMENT);
             this._boxes = new this.ArrayType(this.data, 0, numNodes * 4);
-            this._indices = new this.IndexArrayType(this.data,
-                numNodes * 4 * this.ArrayType.BYTES_PER_ELEMENT,
-                numNodes);
+            this._indices = new this.IndexArrayType(this.data, nodesByteSize, numNodes);
             this._numAdded = 0;
             this._pos = 0;
             this.minX = Infinity;
