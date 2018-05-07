@@ -46,9 +46,14 @@ export default class Flatbush {
         this.ArrayType = ArrayType || Float64Array;
         this.IndexArrayType = numNodes < 16384 ? Uint16Array : Uint32Array;
 
+        const arrayTypeIndex = ARRAY_TYPES.indexOf(this.ArrayType);
         const nodesByteSize = numNodes * 4 * this.ArrayType.BYTES_PER_ELEMENT;
 
-        if (data) {
+        if (arrayTypeIndex < 0) {
+            throw new Error(`Unexpected typed array class: ${ArrayType}.`);
+        }
+
+        if (data && (data instanceof ArrayBuffer)) {
             this.data = data;
             this._boxes = new this.ArrayType(this.data, 8, numNodes * 4);
             this._indices = new this.IndexArrayType(this.data, 8 + nodesByteSize, numNodes);
@@ -69,7 +74,7 @@ export default class Flatbush {
             this.maxX = -Infinity;
             this.maxY = -Infinity;
 
-            new Uint8Array(this.data, 0, 2).set([0xfb, (VERSION << 4) + ARRAY_TYPES.indexOf(this.ArrayType)]);
+            new Uint8Array(this.data, 0, 2).set([0xfb, (VERSION << 4) + arrayTypeIndex]);
             new Uint16Array(this.data, 2, 1)[0] = nodeSize;
             new Uint32Array(this.data, 4, 1)[0] = numItems;
         }
