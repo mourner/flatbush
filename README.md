@@ -8,13 +8,13 @@ Similar to [RBush](https://github.com/mourner/rbush), with the following key dif
 
 - **Static**: you can't add/remove items after initial indexing.
 - **Faster** indexing and search, with much lower **memory** footprint.
-- Index is stored as a single **typed array** (so you can [transfer](https://developer.mozilla.org/en-US/docs/Web/API/Transferable) it between the main thread and Web Workers).
+- Index is stored as a single **array buffer** (so you can [transfer](https://developer.mozilla.org/en-US/docs/Web/API/Transferable) it between threads or store it as a compact binary file).
 
 [![Build Status](https://travis-ci.org/mourner/flatbush.svg?branch=master)](https://travis-ci.org/mourner/flatbush)
-[![gzipped size: 1.5 kB](https://img.shields.io/badge/gzipped%20size-1.5%20kB-brightgreen.svg)](https://unpkg.com/flatbush)
+[![gzipped size: 1.8 kB](https://img.shields.io/badge/gzipped%20size-1.8%20kB-brightgreen.svg)](https://unpkg.com/flatbush)
 [![Simply Awesome](https://img.shields.io/badge/simply-awesome-brightgreen.svg)](https://github.com/mourner/projects)
 
-## Example
+## Usage
 
 ```js
 // initialize Flatbush for 1000 items
@@ -30,6 +30,12 @@ index.finish();
 
 // make a bounding box query
 const found = index.search(minX, minY, maxX, maxY).map((i) => items[i]);
+
+// instantly transfer the index from a worker to the main thread
+postMessage(index.data, [index.data]);
+
+// reconstruct the index from a raw array buffer
+const index = Flatbush.from(e.data);
 
 ```
 
@@ -87,13 +93,16 @@ and only includes it if the function returned a truthy value.
 const ids = index.search(10, 10, 20, 20, (i) => items[i].foo === 'bar');
 ```
 
+#### Flatbush.from(data)
+
+Recreates a Flatbush index from raw `ArrayBuffer` data
+(that's exposed as `index.data` on a previously indexed Flatbush instance).
+Very useful for transfering indices between threads or storing them in a file.
+
 #### Properties
 
-- `numItems`: number of items in the index.
-- `nodeSize`: size of the tree node.
-- `ArrayType`: array class used for the index.
+- `data`: array buffer that holds the index.
 - `minX`, `minY`, `maxX`, `maxY`: bounding box of the data.
-- `data`: typed array that holds the index.
 
 ## Performance
 
