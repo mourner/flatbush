@@ -42,7 +42,6 @@ export default class Flatbush {
             this._boxes = new this.ArrayType(this.data, 8, numNodes * 4);
             this._indices = new this.IndexArrayType(this.data, 8 + nodesByteSize, numNodes);
 
-            this._numAdded = numItems;
             this._pos = numNodes * 4;
             this.minX = this._boxes[this._pos - 4];
             this.minY = this._boxes[this._pos - 3];
@@ -50,7 +49,6 @@ export default class Flatbush {
             this.maxY = this._boxes[this._pos - 1];
 
         } else {
-            this._numAdded = 0;
             this.data = new ArrayBuffer(8 + nodesByteSize + numNodes * this.IndexArrayType.BYTES_PER_ELEMENT);
             this._boxes = new this.ArrayType(this.data, 8, numNodes * 4);
             this._indices = new this.IndexArrayType(this.data, 8 + nodesByteSize, numNodes);
@@ -67,7 +65,8 @@ export default class Flatbush {
     }
 
     add(minX, minY, maxX, maxY) {
-        this._indices[this._numAdded] = this._numAdded++;
+        const index = this._pos >> 2;
+        this._indices[index] = index;
         this._boxes[this._pos++] = minX;
         this._boxes[this._pos++] = minY;
         this._boxes[this._pos++] = maxX;
@@ -80,8 +79,8 @@ export default class Flatbush {
     }
 
     finish() {
-        if (this._numAdded !== this.numItems) {
-            throw new Error('Added ' + this._numAdded + ' items when expected ' + this.numItems);
+        if (this._pos >> 2 !== this.numItems) {
+            throw new Error('Added ' + (this._pos >> 2) + ' items when expected ' + this.numItems);
         }
 
         const width = this.maxX - this.minX;
