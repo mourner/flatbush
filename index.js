@@ -1,8 +1,10 @@
 
-const arrayTypes = [
+const ARRAY_TYPES = [
     Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array,
     Int32Array, Uint32Array, Float32Array, Float64Array
 ];
+
+const VERSION = 3; // serialized format version
 
 export default class Flatbush {
 
@@ -10,16 +12,25 @@ export default class Flatbush {
         if (!(data instanceof ArrayBuffer)) {
             throw new Error('Data must be an instance of ArrayBuffer.');
         }
-        const header = new Uint32Array(data, 0, 2);
-        return new Flatbush(header[0], header[1] >> 4, arrayTypes[header[1] % 16], data);
+        const [magic, versionAndType] = new Uint8Array(data, 0, 2);
+        if (magic !== 0xfb) {
+            throw new Error('Data does not appear to be in a Flatbush format.');
+        }
+        if (versionAndType >> 4 !== VERSION) {
+            throw new Error(`Got v${versionAndType >> 4} data when expected v${VERSION}.`);
+        }
+        const [nodeSize] = new Uint16Array(data, 2, 1);
+        const [numItems] = new Uint32Array(data, 4, 1);
+
+        return new Flatbush(numItems, nodeSize, ARRAY_TYPES[versionAndType & 0x0f], data);
     }
 
     constructor(numItems, nodeSize, ArrayType, data) {
         if (numItems === undefined) throw new Error('Missing required argument: numItems.');
-        if (isNaN(numItems) || numItems <= 0) throw new Error('Unpexpected numItems value: ' + numItems);
+        if (isNaN(numItems) || numItems <= 0) throw new Error(`Unpexpected numItems value: ${numItems}.`);
 
         this.numItems = +numItems;
-        this.nodeSize = Math.max(+nodeSize || 16, 2);
+        this.nodeSize = Math.min(Math.max(+nodeSize || 16, 2), 65535);
 
         // calculate the total number of nodes in the R-tree to allocate space for
         // and the index of each tree level (used in search later)
@@ -58,9 +69,9 @@ export default class Flatbush {
             this.maxX = -Infinity;
             this.maxY = -Infinity;
 
-            const header = new Uint32Array(this.data, 0, 2);
-            header[0] = numItems;
-            header[1] = (nodeSize << 4) + arrayTypes.indexOf(this.ArrayType);
+            new Uint8Array(this.data, 0, 2).set([0xfb, (VERSION << 4) + ARRAY_TYPES.indexOf(this.ArrayType)]);
+            new Uint16Array(this.data, 2, 1)[0] = nodeSize;
+            new Uint32Array(this.data, 4, 1)[0] = numItems;
         }
     }
 
@@ -80,7 +91,7 @@ export default class Flatbush {
 
     finish() {
         if (this._pos >> 2 !== this.numItems) {
-            throw new Error('Added ' + (this._pos >> 2) + ' items when expected ' + this.numItems);
+            throw new Error(`Added ${this._pos >> 2} items when expected ${this.numItems}.`);
         }
 
         const width = this.maxX - this.minX;
