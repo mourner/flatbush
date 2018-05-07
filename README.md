@@ -54,7 +54,7 @@ const Flatbush = require('flatbush');
 Or use a browser build directly:
 
 ```html
-<script src="https://unpkg.com/flatbush@2.0.0/flatbush.min.js"></script>
+<script src="https://unpkg.com/flatbush@3.0.0/flatbush.min.js"></script>
 ```
 
 ## API
