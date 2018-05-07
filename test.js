@@ -65,7 +65,7 @@ test('performs bbox search', (t) => {
 
 test('reconstructs an index from array buffer', (t) => {
     const index = createIndex();
-    const index2 = new Flatbush(data.length / 4, 16, Float64Array, index.data);
+    const index2 = Flatbush.from(index.data);
 
     t.same(index, index2);
     t.end();

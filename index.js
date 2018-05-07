@@ -1,5 +1,18 @@
 
+const arrayTypes = [
+    Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array,
+    Int32Array, Uint32Array, Float32Array, Float64Array
+];
+
 export default class Flatbush {
+
+    static from(data) {
+        if (!(data instanceof ArrayBuffer)) {
+            throw new Error('Data must be an instance of ArrayBuffer.');
+        }
+        const header = new Uint32Array(data, 0, 2);
+        return new Flatbush(header[0], header[1] >> 4, arrayTypes[header[1] % 16], data);
+    }
 
     constructor(numItems, nodeSize, ArrayType, data) {
         if (numItems === undefined) throw new Error('Missing required argument: numItems.');
@@ -25,13 +38,9 @@ export default class Flatbush {
         const nodesByteSize = numNodes * 4 * this.ArrayType.BYTES_PER_ELEMENT;
 
         if (data) {
-            if (data instanceof ArrayBuffer) {
-                this.data = data;
-            } else {
-                throw new Error('Data must be an instance of ArrayBuffer.');
-            }
-            this._boxes = new this.ArrayType(this.data, 0, numNodes * 4);
-            this._indices = new this.IndexArrayType(this.data, nodesByteSize, numNodes);
+            this.data = data;
+            this._boxes = new this.ArrayType(this.data, 8, numNodes * 4);
+            this._indices = new this.IndexArrayType(this.data, 8 + nodesByteSize, numNodes);
 
             this._numAdded = numItems;
             this._pos = numNodes * 4;
@@ -41,15 +50,19 @@ export default class Flatbush {
             this.maxY = this._boxes[this._pos - 1];
 
         } else {
-            this.data = new ArrayBuffer(nodesByteSize + numNodes * this.IndexArrayType.BYTES_PER_ELEMENT);
-            this._boxes = new this.ArrayType(this.data, 0, numNodes * 4);
-            this._indices = new this.IndexArrayType(this.data, nodesByteSize, numNodes);
             this._numAdded = 0;
+            this.data = new ArrayBuffer(8 + nodesByteSize + numNodes * this.IndexArrayType.BYTES_PER_ELEMENT);
+            this._boxes = new this.ArrayType(this.data, 8, numNodes * 4);
+            this._indices = new this.IndexArrayType(this.data, 8 + nodesByteSize, numNodes);
             this._pos = 0;
             this.minX = Infinity;
             this.minY = Infinity;
             this.maxX = -Infinity;
             this.maxY = -Infinity;
+
+            const header = new Uint32Array(this.data, 0, 2);
+            header[0] = numItems;
+            header[1] = (nodeSize << 4) + arrayTypes.indexOf(this.ArrayType);
         }
     }
 
