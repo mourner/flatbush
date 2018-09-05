@@ -1,11 +1,11 @@
 
-const Flatbush = require('./index.js').default;
-const rbush = require('rbush');
+import Flatbush from './index.js';
+import rbush from 'rbush';
 
 const N = 1000000;
 const K = 1000;
 
-console.log(N + ' rectangles');
+console.log(`${N} rectangles`);
 
 function addRandomBox(arr, boxSize) {
     const x = Math.random() * (100 - boxSize);
@@ -40,7 +40,7 @@ index.finish();
 console.timeEnd('flatbush');
 
 function benchSearch(boxes, name) {
-    const id = K + ' searches ' + name;
+    const id = `${K} searches ${name}`;
     console.time(id);
     for (let i = 0; i < boxes.length; i += 4) {
         index.search(boxes[i], boxes[i + 1], boxes[i + 2], boxes[i + 3]);
@@ -76,7 +76,7 @@ function benchSearchRBush(boxes, name) {
             maxY: boxes[i + 3]
         });
     }
-    const id = K + ' searches ' + name;
+    const id = `${K} searches ${name}`;
     console.time(id);
     for (let i = 0; i < boxes2.length; i++) {
         rbushIndex.search(boxes2[i]);

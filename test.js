@@ -1,6 +1,6 @@
 
-const Flatbush = require('./index.js').default;
-const test = require('tape').test;
+import Flatbush from './index.js';
+import test from 'tape';
 
 const data = [
     8, 62, 11, 66, 57, 17, 57, 19, 76, 26, 79, 29, 36, 56, 38, 56, 92, 77, 96, 80, 87, 70, 90, 74,

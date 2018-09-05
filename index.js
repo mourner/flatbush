@@ -25,12 +25,12 @@ export default class Flatbush {
         return new Flatbush(numItems, nodeSize, ARRAY_TYPES[versionAndType & 0x0f], data);
     }
 
-    constructor(numItems, nodeSize, ArrayType, data) {
+    constructor(numItems, nodeSize = 16, ArrayType = Float64Array, data) {
         if (numItems === undefined) throw new Error('Missing required argument: numItems.');
         if (isNaN(numItems) || numItems <= 0) throw new Error(`Unpexpected numItems value: ${numItems}.`);
 
         this.numItems = +numItems;
-        this.nodeSize = Math.min(Math.max(+nodeSize || 16, 2), 65535);
+        this.nodeSize = Math.min(Math.max(+nodeSize, 2), 65535);
 
         // calculate the total number of nodes in the R-tree to allocate space for
         // and the index of each tree level (used in search later)

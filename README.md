@@ -66,8 +66,6 @@ Creates a Flatbush index that will hold a given number of items (`numItems`). Ad
 - `nodeSize`: size of the tree node (`16` by default); experiment with different values for best performance.
 - `ArrayType`: the array type used for tree storage (`Float64Array` by default);
 other types may be faster in certain cases (e.g. `Int32Array` when your data is integer).
-- `data`: if provided an array or an array buffer from a previously indexed Flatbush object (`index.data` or `index.data.buffer`),
-an index will be recreated from this data (useful for transfering indices between threads).
 
 #### index.add(minX, minY, maxX, maxY)
 
@@ -106,18 +104,18 @@ Very useful for transfering indices between threads or storing them in a file.
 
 ## Performance
 
-Running `npm run bench` with Node v8.10.0:
+Running `npm run bench` with Node v10.9.0:
 
 ```
 1000000 rectangles
 
-flatbush: 252.849ms
-1000 searches 10%: 617.473ms
-1000 searches 1%: 66.968ms
-1000 searches 0.01%: 7.818ms
+flatbush: 256.701ms
+1000 searches 10%: 584.421ms
+1000 searches 1%: 70.088ms
+1000 searches 0.01%: 6.933ms
 
-rbush: 1083.758ms
-1000 searches 10%: 920.252ms
-1000 searches 1%: 173.104ms
-1000 searches 0.01%: 19.057ms
+rbush: 1273.758ms
+1000 searches 10%: 1207.384ms
+1000 searches 1%: 226.523ms
+1000 searches 0.01%: 25.242ms
 ```

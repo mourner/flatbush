@@ -1,5 +1,5 @@
 import buble from 'rollup-plugin-buble';
-import uglify from 'rollup-plugin-uglify'
+import {terser} from 'rollup-plugin-terser'
 
 const output = (file, plugins) => ({
     input: 'index.js',
@@ -13,5 +13,5 @@ const output = (file, plugins) => ({
 
 export default [
     output('flatbush.js', [buble()]),
-    output('flatbush.min.js', [uglify(), buble()])
+    output('flatbush.min.js', [terser(), buble()])
 ];

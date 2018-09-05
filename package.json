@@ -24,14 +24,7 @@
     "url": "git+https://github.com/mourner/flatbush.git"
   },
   "eslintConfig": {
-    "extends": "mourner",
-    "parserOptions": {
-      "sourceType": "module"
-    },
-    "rules": {
-      "no-var": "error",
-      "prefer-const": "error"
-    }
+    "extends": "mourner"
   },
   "keywords": [
     "geometry",
@@ -48,13 +41,13 @@
   },
   "homepage": "https://github.com/mourner/flatbush#readme",
   "devDependencies": {
-    "eslint": "^4.19.1",
-    "eslint-config-mourner": "^2.0.3",
-    "esm": "^3.0.30",
+    "eslint": "^5.5.0",
+    "eslint-config-mourner": "^3.0.0",
+    "esm": "^3.0.82",
     "rbush": "^2.0.2",
-    "rollup": "^0.58.2",
+    "rollup": "^0.65.1",
     "rollup-plugin-buble": "^0.19.2",
-    "rollup-plugin-uglify": "^3.0.0",
-    "tape": "^4.9.0"
+    "rollup-plugin-terser": "^2.0.2",
+    "tape": "^4.9.1"
   }
 }
