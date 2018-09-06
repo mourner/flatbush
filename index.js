@@ -4,7 +4,7 @@ const ARRAY_TYPES = [
     Int32Array, Uint32Array, Float32Array, Float64Array
 ];
 
-const VERSION = 3; // serialized format version
+const VERSION = 4; // serialized format version
 
 export default class Flatbush {
 
@@ -44,7 +44,7 @@ export default class Flatbush {
         } while (n !== 1);
 
         this.ArrayType = ArrayType || Float64Array;
-        this.IndexArrayType = numNodes < 16384 ? Uint16Array : Uint32Array;
+        this.IndexArrayType = numNodes < 65536 ? Uint16Array : Uint32Array;
 
         const arrayTypeIndex = ARRAY_TYPES.indexOf(this.ArrayType);
         const nodesByteSize = numNodes * 4 * this.ArrayType.BYTES_PER_ELEMENT;
