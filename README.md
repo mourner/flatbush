@@ -62,12 +62,12 @@ Or use a browser build directly:
 
 ## API
 
-#### new Flatbush(numItems[, nodeSize, ArrayType, data])
+#### new Flatbush(numItems[, nodeSize, ArrayType])
 
 Creates a Flatbush index that will hold a given number of items (`numItems`). Additionally accepts:
 
 - `nodeSize`: size of the tree node (`16` by default); experiment with different values for best performance.
-- `ArrayType`: the array type used for tree storage (`Float64Array` by default);
+- `ArrayType`: the array type used for coordinates storage (`Float64Array` by default);
 other types may be faster in certain cases (e.g. `Int32Array` when your data is integer).
 
 #### index.add(minX, minY, maxX, maxY)
@@ -77,7 +77,7 @@ Adds a given rectangle to the index.
 #### index.finish()
 
 Performs indexing of the added rectangles.
-Their number must match the one provided when creating a `flatbush` object.
+Their number must match the one provided when creating a `Flatbush` object.
 
 #### index.search(minX, minY, maxX, maxY[, filterFn])
 
@@ -96,15 +96,15 @@ const ids = index.search(10, 10, 20, 20, (i) => items[i].foo === 'bar');
 
 #### index.neighbors(x, y[, maxResults, maxDistance, filterFn])
 
-Returns an array of indices of items in order of distance from the given `x, y`.
+Returns an array of item indices in order of distance from the given `x, y`
+(known as K nearest neighbors, or KNN).
 
 ```js
 const ids = index.neighbors(10, 10, 5); // returns 5 ids
 ```
 
 `maxResults` and `maxDistance` are `Infinity` by default.
-
-Also accepts a `filterFn` like in `index.search`.
+Also accepts a `filterFn` similar to `index.search`.
 
 #### Flatbush.from(data)
 
@@ -116,6 +116,10 @@ Very useful for transfering indices between threads or storing them in a file.
 
 - `data`: array buffer that holds the index.
 - `minX`, `minY`, `maxX`, `maxY`: bounding box of the data.
+- `numItems`: number of stored items.
+- `nodeSize`: number of items in a node tree.
+- `ArrayType`: array type used for internal coordinates storage.
+- `IndexArrayType`: array type used for internal item indices storage.
 
 ## Performance
 

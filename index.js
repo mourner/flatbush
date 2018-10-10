@@ -82,7 +82,7 @@ export default class Flatbush {
         }
 
         // a priority queue for k-nearest-neighbors queries
-        this.queue = new FlatQueue();
+        this._queue = new FlatQueue();
     }
 
     add(minX, minY, maxX, maxY) {
@@ -206,7 +206,7 @@ export default class Flatbush {
         }
 
         let nodeIndex = this._boxes.length - 4;
-        const q = this.queue;
+        const q = this._queue;
         const results = [];
         const maxDistSquared = maxDistance * maxDistance;
 
