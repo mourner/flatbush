@@ -119,18 +119,14 @@ Very useful for transfering indices between threads or storing them in a file.
 
 ## Performance
 
-Running `npm run bench` with Node v10.9.0:
+Running `npm run bench` with Node v10.11.0:
 
-```
-1000000 rectangles
-
-flatbush: 256.701ms
-1000 searches 10%: 584.421ms
-1000 searches 1%: 70.088ms
-1000 searches 0.01%: 6.933ms
-
-rbush: 1273.758ms
-1000 searches 10%: 1207.384ms
-1000 searches 1%: 226.523ms
-1000 searches 0.01%: 25.242ms
-```
+bench | flatbush | rbush
+--- | --- | ---
+index 1,000,000 rectangles | 263ms | 1208ms
+1000 searches 10% | 594ms | 1105ms
+1000 searches 1% | 68ms | 213ms
+1000 searches 0.01% | 9ms | 27ms
+1000 searches of 100 neighbors | 27ms | 36ms
+1 search of 1000000 neighbors | 160ms | 618ms
+100000 searches of 1 neighbor | 1083ms | 1827ms

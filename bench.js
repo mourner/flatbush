@@ -5,8 +5,10 @@ import rbushKNN from 'rbush-knn';
 
 const N = 1000000;
 const K = 1000;
+const nodeSize = 16;
 
 console.log(`${N} rectangles`);
+console.log(`node size: ${nodeSize}`);
 
 function addRandomBox(arr, boxSize) {
     const x = Math.random() * (100 - boxSize);
@@ -29,7 +31,7 @@ for (let i = 0; i < K; i++) {
 }
 
 console.time('flatbush');
-const index = new Flatbush(N, 16);
+const index = new Flatbush(N, nodeSize);
 for (let i = 0; i < coords.length; i += 4) {
     index.add(
         coords[i],
@@ -82,7 +84,7 @@ for (let i = 0; i < coords.length; i += 4) {
 }
 
 console.time('rbush');
-const rbushIndex = rbush().load(dataForRbush);
+const rbushIndex = rbush(nodeSize).load(dataForRbush);
 console.timeEnd('rbush');
 
 function benchSearchRBush(boxes, name) {
