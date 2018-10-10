@@ -11,7 +11,7 @@ Similar to [RBush](https://github.com/mourner/rbush), with the following key dif
 - Index is stored as a single **array buffer** (so you can [transfer](https://developer.mozilla.org/en-US/docs/Web/API/Transferable) it between threads or store it as a compact binary file).
 
 [![Build Status](https://travis-ci.org/mourner/flatbush.svg?branch=master)](https://travis-ci.org/mourner/flatbush)
-[![gzipped size: 1.8 kB](https://img.shields.io/badge/gzipped%20size-1.8%20kB-brightgreen.svg)](https://unpkg.com/flatbush)
+[![gzipped size: 2.3 kB](https://img.shields.io/badge/gzipped%20size-2.3%20kB-brightgreen.svg)](https://unpkg.com/flatbush)
 [![Simply Awesome](https://img.shields.io/badge/simply-awesome-brightgreen.svg)](https://github.com/mourner/projects)
 
 ## Usage
@@ -57,7 +57,7 @@ const Flatbush = require('flatbush');
 Or use a browser build directly:
 
 ```html
-<script src="https://unpkg.com/flatbush@3.0.0/flatbush.min.js"></script>
+<script src="https://unpkg.com/flatbush@3.1.0/flatbush.min.js"></script>
 ```
 
 ## API
