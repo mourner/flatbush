@@ -1,4 +1,6 @@
 
+import FlatQueue from 'flatqueue';
+
 const ARRAY_TYPES = [
     Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array,
     Int32Array, Uint32Array, Float32Array, Float64Array
@@ -78,6 +80,9 @@ export default class Flatbush {
             new Uint16Array(this.data, 2, 1)[0] = nodeSize;
             new Uint32Array(this.data, 4, 1)[0] = numItems;
         }
+
+        // a priority queue for k-nearest-neighbors queries
+        this.queue = new FlatQueue();
     }
 
     add(minX, minY, maxX, maxY) {
@@ -194,6 +199,79 @@ export default class Flatbush {
 
         return results;
     }
+
+    neighbors(x, y, maxResults = Infinity, maxDistance = Infinity, filterFn) {
+        if (this._pos !== this._boxes.length) {
+            throw new Error('Data not yet indexed - call index.finish().');
+        }
+
+        let nodeIndex = this._boxes.length - 4;
+        const q = this.queue;
+        const results = [];
+        const maxDistSquared = maxDistance * maxDistance;
+
+        while (nodeIndex !== undefined) {
+            // find the end index of the node
+            const end = Math.min(nodeIndex + this.nodeSize * 4, upperBound(nodeIndex, this._levelBounds));
+
+            // add child nodes to the queue
+            for (let pos = nodeIndex; pos < end; pos += 4) {
+                const index = this._indices[pos >> 2];
+
+                const dx = axisDist(x, this._boxes[pos], this._boxes[pos + 2]);
+                const dy = axisDist(y, this._boxes[pos + 1], this._boxes[pos + 3]);
+                const dist = dx * dx + dy * dy;
+
+                if (nodeIndex < this.numItems * 4) { // leaf node
+                    if (filterFn === undefined || filterFn(index)) {
+                        // put a negative index if it's an item rather than a node, to recognize later
+                        q.push(-index - 1, dist);
+                    }
+                } else {
+                    q.push(index, dist);
+                }
+            }
+
+            // pop items from the queue
+            while (q.length && q.peek() < 0) {
+                const dist = q.peekValue();
+                if (dist > maxDistSquared) {
+                    q.clear();
+                    return results;
+                }
+                results.push(-q.pop() - 1);
+
+                if (results.length === maxResults) {
+                    q.clear();
+                    return results;
+                }
+            }
+
+            nodeIndex = q.pop();
+        }
+
+        q.clear();
+        return results;
+    }
+}
+
+function axisDist(k, min, max) {
+    return k < min ? min - k : k <= max ? 0 : k - max;
+}
+
+// binary search for the first value in the array bigger than the given
+function upperBound(value, arr) {
+    let i = 0;
+    let j = arr.length - 1;
+    while (i < j) {
+        const m = (i + j) >> 1;
+        if (arr[m] > value) {
+            j = m;
+        } else {
+            i = m + 1;
+        }
+    }
+    return arr[i];
 }
 
 // custom quicksort that sorts bbox data alongside the hilbert values

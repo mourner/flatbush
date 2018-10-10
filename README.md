@@ -31,6 +31,9 @@ index.finish();
 // make a bounding box query
 const found = index.search(minX, minY, maxX, maxY).map((i) => items[i]);
 
+// make a k-nearest-neighbors query
+const neighborIds = index.neighbors(x, y, 5);
+
 // instantly transfer the index from a worker to the main thread
 postMessage(index.data, [index.data]);
 
@@ -90,6 +93,18 @@ and only includes it if the function returned a truthy value.
 ```js
 const ids = index.search(10, 10, 20, 20, (i) => items[i].foo === 'bar');
 ```
+
+#### index.neighbors(x, y[, maxResults, maxDistance, filterFn])
+
+Returns an array of indices of items in order of distance from the given `x, y`.
+
+```js
+const ids = index.neighbors(10, 10, 5); // returns 5 ids
+```
+
+`maxResults` and `maxDistance` are `Infinity` by default.
+
+Also accepts a `filterFn` like in `index.search`.
 
 #### Flatbush.from(data)
 

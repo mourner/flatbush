@@ -1,6 +1,7 @@
 
 import Flatbush from './index.js';
 import rbush from 'rbush';
+import rbushKNN from 'rbush-knn';
 
 const N = 1000000;
 const K = 1000;
@@ -48,9 +49,27 @@ function benchSearch(boxes, name) {
     console.timeEnd(id);
 }
 
+function benchNeighbors(K, M) {
+    const id = `${K} searches of ${M} neighbors`;
+    console.time(id);
+    for (let i = 0; i < K; i++) {
+        index.neighbors(boxes1[i], boxes1[i + 1], M);
+    }
+    console.timeEnd(id);
+}
+
 benchSearch(boxes100, '10%');
 benchSearch(boxes10, '1%');
 benchSearch(boxes1, '0.01%');
+
+benchNeighbors(K, 1);
+benchNeighbors(K, 100);
+benchNeighbors(1, N);
+
+const knnId = `${N / 10} searches of 1`;
+console.time(knnId);
+for (let i = 0; i < coords.length; i += 40) index.neighbors(coords[i], coords[i + 1], 1);
+console.timeEnd(knnId);
 
 const dataForRbush = [];
 for (let i = 0; i < coords.length; i += 4) {
@@ -84,6 +103,23 @@ function benchSearchRBush(boxes, name) {
     console.timeEnd(id);
 }
 
+function benchNeighborsRBush(K, M) {
+    const id = `${K} searches of ${M} neighbors`;
+    console.time(id);
+    for (let i = 0; i < K; i++) {
+        rbushKNN(rbushIndex, boxes1[i], boxes1[i + 1], M);
+    }
+    console.timeEnd(id);
+}
+
 benchSearchRBush(boxes100, '10%');
 benchSearchRBush(boxes10, '1%');
 benchSearchRBush(boxes1, '0.01%');
+
+benchNeighborsRBush(K, 1);
+benchNeighborsRBush(K, 100);
+benchNeighborsRBush(1, N);
+
+console.time(knnId);
+for (let i = 0; i < coords.length; i += 40) rbushKNN(rbushIndex, coords[i], coords[i + 1], 1);
+console.timeEnd(knnId);

@@ -94,4 +94,25 @@ test('does not freeze on numItems = 0', {timeout: 100}, (t) => {
     t.end();
 });
 
+test('performs a k-nearest-neighbors query', (t) => {
+    const index = createIndex();
+    const ids = index.neighbors(50, 50, 3);
+    t.same(ids.sort(compare), [31, 6, 75].sort(compare));
+    t.end();
+});
+
+test('k-nearest-neighbors query accepts maxDistance', (t) => {
+    const index = createIndex();
+    const ids = index.neighbors(50, 50, Infinity, 12);
+    t.same(ids.sort(compare), [6, 29, 31, 75, 85].sort(compare));
+    t.end();
+});
+
+test('k-nearest-neighbors query accepts filterFn', (t) => {
+    const index = createIndex();
+    const ids = index.neighbors(50, 50, 5, Infinity, i => i % 2 === 0);
+    t.same(ids.sort(compare), [6, 16, 18, 24, 54].sort(compare));
+    t.end();
+});
+
 function compare(a, b) { return a - b; }
