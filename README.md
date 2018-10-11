@@ -110,7 +110,7 @@ Also accepts a `filterFn` similar to `index.search`.
 
 Recreates a Flatbush index from raw `ArrayBuffer` data
 (that's exposed as `index.data` on a previously indexed Flatbush instance).
-Very useful for transfering indices between threads or storing them in a file.
+Very useful for transferring indices between threads or storing them in a file.
 
 #### Properties
 
