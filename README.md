@@ -133,4 +133,4 @@ index 1,000,000 rectangles | 263ms | 1208ms
 1000 searches 0.01% | 9ms | 27ms
 1000 searches of 100 neighbors | 29ms | 58ms
 1 search of 1,000,000 neighbors | 148ms | 781ms
-100,000 searches of 1 neighbor | 939ms | 1548ms
+100,000 searches of 1 neighbor | 870ms | 1548ms

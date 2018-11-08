@@ -174,7 +174,7 @@ export default class Flatbush {
 
             // search through child nodes
             for (let pos = nodeIndex; pos < end; pos += 4) {
-                const index = this._indices[pos >> 2];
+                const index = this._indices[pos >> 2] | 0;
 
                 // check if node bbox intersects with query bbox
                 if (maxX < this._boxes[pos]) continue; // maxX < nodeMinX
@@ -216,7 +216,7 @@ export default class Flatbush {
 
             // add child nodes to the queue
             for (let pos = nodeIndex; pos < end; pos += 4) {
-                const index = this._indices[pos >> 2];
+                const index = this._indices[pos >> 2] | 0;
 
                 const dx = axisDist(x, this._boxes[pos], this._boxes[pos + 2]);
                 const dy = axisDist(y, this._boxes[pos + 1], this._boxes[pos + 3]);
