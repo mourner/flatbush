@@ -63,6 +63,27 @@ test('performs bbox search', (t) => {
     t.end();
 });
 
+test('performs bbox search on 10000 points index', (t) => {
+    const index = new Flatbush(10000);
+    for (let i = 0; i < 10000; i++) {
+        const x = i;
+        const y = 10000 - i - 1;
+        index.add(x, y, x, y);
+    }
+    index.finish();
+    const ids = index.search(0, 0, 7500, 7500);
+    for (let i = 0; i < ids.length; i++) {
+        const pos = index._indices[ids[i]] * 4;
+        const minX = index._boxes[pos];
+        const minY = index._boxes[pos + 1];
+        const maxX = index._boxes[pos + 2];
+        const maxY = index._boxes[pos + 3];
+        if (!(minX >= 0 && minY >= 0 && maxX <= 7500 && maxY <= 7500))
+            t.fail(`${minX} ${minY} ${maxX} ${maxY} does not intersect searched box`);
+    }
+    t.end();
+});
+
 test('reconstructs an index from array buffer', (t) => {
     const index = createIndex();
     const index2 = Flatbush.from(index.data);
