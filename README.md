@@ -11,7 +11,7 @@ Similar to [RBush](https://github.com/mourner/rbush), with the following key dif
 - Index is stored as a single **array buffer** (so you can [transfer](https://developer.mozilla.org/en-US/docs/Web/API/Transferable) it between threads or store it as a compact binary file).
 
 [![Build Status](https://action-badges.now.sh/mourner/flatbush)](https://github.com/mourner/flatbush/actions)
-[![gzipped size: 2.3 kB](https://img.shields.io/badge/gzipped%20size-2.3%20kB-brightgreen.svg)](https://unpkg.com/flatbush)
+[![minzipped size](https://badgen.net/bundlephobia/minzip/flatbush)](https://unpkg.com/flatbush)
 [![Simply Awesome](https://img.shields.io/badge/simply-awesome-brightgreen.svg)](https://github.com/mourner/projects)
 
 ## Usage
