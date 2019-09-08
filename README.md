@@ -10,7 +10,7 @@ Similar to [RBush](https://github.com/mourner/rbush), with the following key dif
 - **Faster** indexing and search, with much lower **memory** footprint.
 - Index is stored as a single **array buffer** (so you can [transfer](https://developer.mozilla.org/en-US/docs/Web/API/Transferable) it between threads or store it as a compact binary file).
 
-[![Build Status](https://action-badges.now.sh/mourner/flatbush)](https://github.com/mourner/flatbush/actions)
+[![Build Status](https://github.com/mourner/flatbush/workflows/Node%20CI/badge.svg)](https://github.com/mourner/flatbush/actions)
 [![minzipped size](https://badgen.net/bundlephobia/minzip/flatbush)](https://unpkg.com/flatbush)
 [![Simply Awesome](https://img.shields.io/badge/simply-awesome-brightgreen.svg)](https://github.com/mourner/projects)
 
