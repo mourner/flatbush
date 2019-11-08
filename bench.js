@@ -1,6 +1,6 @@
 
 import Flatbush from './index.js';
-import rbush from 'rbush';
+import RBush from 'rbush';
 import rbushKNN from 'rbush-knn';
 
 const N = 1000000;
@@ -83,7 +83,7 @@ for (let i = 0; i < coords.length; i += 4) {
 
 console.log('');
 console.time('rbush');
-const rbushIndex = rbush(nodeSize).load(dataForRbush);
+const rbushIndex = new RBush(nodeSize).load(dataForRbush);
 console.timeEnd('rbush');
 
 function benchSearchRBush(boxes, name, warmup) {
