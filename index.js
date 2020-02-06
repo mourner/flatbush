@@ -97,6 +97,8 @@ export default class Flatbush {
         if (minY < this.minY) this.minY = minY;
         if (maxX > this.maxX) this.maxX = maxX;
         if (maxY > this.maxY) this.maxY = maxY;
+
+        return index;
     }
 
     finish() {

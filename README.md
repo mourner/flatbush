@@ -72,7 +72,7 @@ other types may be faster in certain cases (e.g. `Int32Array` when your data is 
 
 #### index.add(minX, minY, maxX, maxY)
 
-Adds a given rectangle to the index.
+Adds a given rectangle to the index. Returns a zero-based, incremental number that represents the newly-added rectangle.
 
 #### index.finish()
 
@@ -81,7 +81,7 @@ Their number must match the one provided when creating a `Flatbush` object.
 
 #### index.search(minX, minY, maxX, maxY[, filterFn])
 
-Returns an array of indices of items in a given bounding box.
+Returns an array of indices of items in a given bounding box. Item indices refer to the value returned by [`index.add()`](#indexaddminx-miny-maxx-maxy).
 
 ```js
 const ids = index.search(10, 10, 20, 20);
@@ -97,7 +97,7 @@ const ids = index.search(10, 10, 20, 20, (i) => items[i].foo === 'bar');
 #### index.neighbors(x, y[, maxResults, maxDistance, filterFn])
 
 Returns an array of item indices in order of distance from the given `x, y`
-(known as K nearest neighbors, or KNN).
+(known as K nearest neighbors, or KNN). Item indices refer to the value returned by [`index.add()`](#indexaddminx-miny-maxx-maxy).
 
 ```js
 const ids = index.neighbors(10, 10, 5); // returns 5 ids

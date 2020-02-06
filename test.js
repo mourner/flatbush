@@ -115,4 +115,19 @@ test('k-nearest-neighbors query accepts filterFn', (t) => {
     t.end();
 });
 
+test('returns index of newly-added rectangle', (t) => {
+    const count = 5;
+    const index = new Flatbush(count);
+
+    const ids = [];
+    for (let i = 0; i < count; i++) {
+        const id = index.add(data[i], data[i + 1], data[i + 2], data[i + 3]);
+        ids.push(id);
+    }
+
+    const expectedSequence = Array.from(Array(count), (v, i) => i);
+    t.same(ids, expectedSequence);
+    t.end();
+});
+
 function compare(a, b) { return a - b; }
