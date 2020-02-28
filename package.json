@@ -48,7 +48,7 @@
     "esm": "^3.2.25",
     "rbush": "^3.0.1",
     "rbush-knn": "^2.1.0",
-    "rollup": "^1.31.0",
+    "rollup": "^1.32.0",
     "rollup-plugin-terser": "^5.2.0",
     "tape": "^4.13.0"
   },

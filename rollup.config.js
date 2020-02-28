@@ -7,6 +7,7 @@ const output = (file, plugins) => ({
     output: {
         name: 'Flatbush',
         format: 'umd',
+        indent: false,
         file
     },
     plugins
@@ -14,5 +15,5 @@ const output = (file, plugins) => ({
 
 export default [
     output('flatbush.js', [resolve(), buble()]),
-    output('flatbush.min.js', [resolve(), terser(), buble()])
+    output('flatbush.min.js', [resolve(), terser({compress: {passes: 2}}), buble()])
 ];
