@@ -53,6 +53,6 @@
     "tape": "^4.13.2"
   },
   "dependencies": {
-    "flatqueue": "^1.1.0"
+    "heapify": "^0.2.1"
   }
 }

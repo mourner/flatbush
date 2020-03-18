@@ -1,5 +1,5 @@
 
-import FlatQueue from 'flatqueue';
+import Heapify from 'heapify';
 
 const ARRAY_TYPES = [
     Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array,
@@ -82,7 +82,7 @@ export default class Flatbush {
         }
 
         // a priority queue for k-nearest-neighbors queries
-        this._queue = new FlatQueue();
+        this._queue = new Heapify(numNodes, undefined, undefined, Int32Array, Float64Array);
     }
 
     add(minX, minY, maxX, maxY) {
@@ -236,7 +236,7 @@ export default class Flatbush {
 
             // pop items from the queue
             while (q.length && q.peek() < 0) {
-                const dist = q.peekValue();
+                const dist = q.peekPriority();
                 if (dist > maxDistSquared) {
                     q.clear();
                     return results;
