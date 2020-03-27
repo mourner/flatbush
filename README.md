@@ -10,7 +10,9 @@ Similar to [RBush](https://github.com/mourner/rbush), with the following key dif
 - **Faster** indexing and search, with much lower **memory** footprint.
 - Index is stored as a single **array buffer** (so you can [transfer](https://developer.mozilla.org/en-US/docs/Web/API/Transferable) it between threads or store it as a compact binary file).
 
-[![Build Status](https://github.com/mourner/flatbush/workflows/Node%20CI/badge.svg)](https://github.com/mourner/flatbush/actions)
+Supports geographic locations with the [geoflatbush](https://github.com/mourner/geoflatbush) extension.
+
+[![Build Status](https://github.com/mourner/flatbush/workflows/Node/badge.svg?branch=master)](https://github.com/mourner/flatbush/actions)
 [![minzipped size](https://badgen.net/bundlephobia/minzip/flatbush)](https://unpkg.com/flatbush)
 [![Simply Awesome](https://img.shields.io/badge/simply-awesome-brightgreen.svg)](https://github.com/mourner/projects)
 
@@ -66,13 +68,13 @@ Or use a browser build directly:
 
 Creates a Flatbush index that will hold a given number of items (`numItems`). Additionally accepts:
 
-- `nodeSize`: size of the tree node (`16` by default); experiment with different values for best performance.
+- `nodeSize`: size of the tree node (`16` by default); experiment with different values for best performance (increasing this value makes indexing faster and queries slower, and vise versa).
 - `ArrayType`: the array type used for coordinates storage (`Float64Array` by default);
 other types may be faster in certain cases (e.g. `Int32Array` when your data is integer).
 
 #### index.add(minX, minY, maxX, maxY)
 
-Adds a given rectangle to the index. Returns a zero-based, incremental number that represents the newly-added rectangle.
+Adds a given rectangle to the index. Returns a zero-based, incremental number that represents the newly added rectangle.
 
 #### index.finish()
 
