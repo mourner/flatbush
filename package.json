@@ -6,15 +6,10 @@
   "module": "index.js",
   "unpkg": "flatbush.min.js",
   "jsdelivr": "flatbush.min.js",
-  "type": "module",
-  "exports": {
-    "import": "index.js",
-    "require": "flatbush.js"
-  },
   "scripts": {
     "pretest": "eslint index.js test.js bench.js",
-    "test": "node --experimental-modules test.js",
-    "bench": "node --experimental-modules bench.js",
+    "test": "node -r esm test.js",
+    "bench": "node -r esm bench.js",
     "build": "rollup -c",
     "prepublishOnly": "npm run build"
   },
@@ -50,6 +45,7 @@
     "@rollup/plugin-node-resolve": "^7.1.1",
     "eslint": "^6.8.0",
     "eslint-config-mourner": "^3.0.0",
+    "esm": "^3.2.25",
     "rbush": "^3.0.1",
     "rbush-knn": "^3.0.1",
     "rollup": "^2.2.0",

@@ -52,7 +52,7 @@ Install using NPM (`npm install flatbush`) or Yarn (`yarn add flatbush`), then:
 // import as an ES module
 import Flatbush from 'flatbush';
 
-// or require in Node / Browserify
+// or require as a CommonJS module
 const Flatbush = require('flatbush');
 ```
 

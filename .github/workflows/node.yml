@@ -9,14 +9,17 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [10.x, 12.x]
     steps:
     - name: Checkout
       uses: actions/checkout@v2
 
-    - name: Setup Node
+    - name: Setup Node ${{ matrix.node-version }}
       uses: actions/setup-node@v1
       with:
-        node-version: 12.x
+        node-version: ${{ matrix.node-version }}
 
     - name: Install dependencies
       run: npm install
