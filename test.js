@@ -33,6 +33,15 @@ function createIndex() {
     return index;
 }
 
+function createSmallIndex(numItems, nodeSize) {
+    const index = new Flatbush(numItems, nodeSize);
+    for (let i = 0; i < 4 * numItems; i += 4) {
+        index.add(data[i], data[i + 1], data[i + 2], data[i + 3]);
+    }
+    index.finish();
+    return index;
+}
+
 
 test('indexes a bunch of rectangles', (t) => {
     const index = createIndex();
@@ -41,6 +50,39 @@ test('indexes a bunch of rectangles', (t) => {
     t.equal(index._boxes.length + index._indices.length, 540);
     t.same(index._boxes.subarray(len - 4, len), [0, 1, 96, 95]);
     t.same(index._indices[len / 4 - 1], 400);
+
+    t.end();
+});
+
+test('skips sorting less than nodeSize number of rectangles', (t) => {
+    const numItems = 14;
+    const nodeSize = 16;
+    const index = createSmallIndex(numItems, nodeSize);
+
+    // compute expected root box extents
+    let rootXMin = Infinity;
+    let rootYMin = Infinity;
+    let rootXMax = -Infinity;
+    let rootYMax = -Infinity;
+    for (let i = 0; i < 4 * numItems; i += 4) {
+        if (data[i] < rootXMin) rootXMin = data[i];
+        if (data[i + 1] < rootYMin) rootYMin = data[i + 1];
+        if (data[i + 2] > rootXMax) rootXMax = data[i + 2];
+        if (data[i + 3] > rootYMax) rootYMax = data[i + 3];
+    }
+
+    // sort should be skipped, ordered progressing indices expected
+    const expectedIndices = [];
+    for (let i = 0; i < numItems; ++i) {
+        expectedIndices.push(i);
+    }
+    expectedIndices.push(0);
+
+    const len = index._boxes.length;
+
+    t.same(index._indices, expectedIndices);
+    t.equal(len, (numItems + 1) * 4);
+    t.same(index._boxes.subarray(len - 4, len), [rootXMin, rootYMin, rootXMax, rootYMax]);
 
     t.end();
 });

@@ -106,6 +106,15 @@ export default class Flatbush {
             throw new Error(`Added ${this._pos >> 2} items when expected ${this.numItems}.`);
         }
 
+        if (this.numItems <= this.nodeSize) {
+            // only one node, skip sorting and just fill the root box
+            this._boxes[this._pos++] = this.minX;
+            this._boxes[this._pos++] = this.minY;
+            this._boxes[this._pos++] = this.maxX;
+            this._boxes[this._pos++] = this.maxY;
+            return;
+        }
+
         const width = this.maxX - this.minX;
         const height = this.maxY - this.minY;
         const hilbertValues = new Uint32Array(this.numItems);
