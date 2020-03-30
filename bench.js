@@ -43,6 +43,8 @@ for (let i = 0; i < coords.length; i += 4) {
 index.finish();
 console.timeEnd('flatbush');
 
+console.log(`index size: ${index.data.byteLength.toLocaleString()}`);
+
 function benchSearch(boxes, name, warmup) {
     const id = `${K} searches ${name}`;
     if (!warmup) console.time(id);
