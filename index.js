@@ -124,7 +124,7 @@ export default class Flatbush {
         }
 
         // sort items by their Hilbert value (for packing later)
-        sort(hilbertValues, this._boxes, this._indices, 0, this.numItems - 1);
+        sort(hilbertValues, this._boxes, this._indices, 0, this.numItems - 1, this.nodeSize);
 
         // generate nodes at each tree level, bottom-up
         for (let i = 0, pos = 0; i < this._levelBounds.length - 1; i++) {
@@ -276,9 +276,9 @@ function upperBound(value, arr) {
     return arr[i];
 }
 
-// custom quicksort that sorts bbox data alongside the hilbert values
-function sort(values, boxes, indices, left, right) {
-    if (left >= right) return;
+// custom quicksort that partially sorts bbox data alongside the hilbert values
+function sort(values, boxes, indices, left, right, nodeSize) {
+    if (Math.floor(left / nodeSize) >= Math.floor(right / nodeSize)) return;
 
     const pivot = values[(left + right) >> 1];
     let i = left - 1;
@@ -291,8 +291,8 @@ function sort(values, boxes, indices, left, right) {
         swap(values, boxes, indices, i, j);
     }
 
-    sort(values, boxes, indices, left, j);
-    sort(values, boxes, indices, j + 1, right);
+    sort(values, boxes, indices, left, j, nodeSize);
+    sort(values, boxes, indices, j + 1, right, nodeSize);
 }
 
 // swap two values and two corresponding boxes

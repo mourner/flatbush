@@ -110,8 +110,8 @@ test('k-nearest-neighbors query accepts maxDistance', (t) => {
 
 test('k-nearest-neighbors query accepts filterFn', (t) => {
     const index = createIndex();
-    const ids = index.neighbors(50, 50, 5, Infinity, i => i % 2 === 0);
-    t.same(ids.sort(compare), [6, 16, 18, 24, 54].sort(compare));
+    const ids = index.neighbors(50, 50, 6, Infinity, i => i % 2 === 0);
+    t.same(ids.sort(compare), [6, 16, 18, 24, 54, 80].sort(compare));
     t.end();
 });
 
