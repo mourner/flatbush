@@ -141,22 +141,18 @@ export default class Flatbush {
 
             // generate a parent node for each block of consecutive <nodeSize> nodes
             while (pos < end) {
+                const nodeIndex = pos;
+
+                // calculate bbox for the new node
                 let nodeMinX = Infinity;
                 let nodeMinY = Infinity;
                 let nodeMaxX = -Infinity;
                 let nodeMaxY = -Infinity;
-                const nodeIndex = pos;
-
-                // calculate bbox for the new node
                 for (let i = 0; i < this.nodeSize && pos < end; i++) {
-                    const minX = this._boxes[pos++];
-                    const minY = this._boxes[pos++];
-                    const maxX = this._boxes[pos++];
-                    const maxY = this._boxes[pos++];
-                    if (minX < nodeMinX) nodeMinX = minX;
-                    if (minY < nodeMinY) nodeMinY = minY;
-                    if (maxX > nodeMaxX) nodeMaxX = maxX;
-                    if (maxY > nodeMaxY) nodeMaxY = maxY;
+                    nodeMinX = Math.min(nodeMinX, this._boxes[pos++]);
+                    nodeMinY = Math.min(nodeMinY, this._boxes[pos++]);
+                    nodeMaxX = Math.max(nodeMaxX, this._boxes[pos++]);
+                    nodeMaxY = Math.max(nodeMaxY, this._boxes[pos++]);
                 }
 
                 // add the new node to the tree data
