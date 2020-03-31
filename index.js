@@ -171,13 +171,12 @@ export default class Flatbush {
         }
 
         let nodeIndex = this._boxes.length - 4;
-        let level = this._levelBounds.length - 1;
         const queue = [];
         const results = [];
 
         while (nodeIndex !== undefined) {
             // find the end index of the node
-            const end = Math.min(nodeIndex + this.nodeSize * 4, this._levelBounds[level]);
+            const end = Math.min(nodeIndex + this.nodeSize * 4, upperBound(nodeIndex, this._levelBounds));
 
             // search through child nodes
             for (let pos = nodeIndex; pos < end; pos += 4) {
@@ -196,11 +195,9 @@ export default class Flatbush {
 
                 } else {
                     queue.push(index); // node; add it to the search queue
-                    queue.push(level - 1);
                 }
             }
 
-            level = queue.pop();
             nodeIndex = queue.pop();
         }
 
