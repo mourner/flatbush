@@ -83,6 +83,10 @@ export default class Flatbush {
 
         // a priority queue for k-nearest-neighbors queries
         this._queue = new FlatQueue();
+
+        // a stack for traversal during bounding box search
+        this._stack = new Uint32Array(this._levelBounds.length * (this.nodeSize - 1));
+        this._stackLen = 0;
     }
 
     add(minX, minY, maxX, maxY) {
@@ -171,7 +175,6 @@ export default class Flatbush {
         }
 
         let nodeIndex = this._boxes.length - 4;
-        const queue = [];
         const results = [];
 
         while (nodeIndex !== undefined) {
@@ -194,11 +197,11 @@ export default class Flatbush {
                     }
 
                 } else {
-                    queue.push(index); // node; add it to the search queue
+                    this._stack[this._stackLen++] = index; // node; add it to the traversal stack
                 }
             }
 
-            nodeIndex = queue.pop();
+            nodeIndex = this._stackLen > 0 ? this._stack[--this._stackLen] : undefined;
         }
 
         return results;
