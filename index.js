@@ -133,7 +133,7 @@ export default class Flatbush {
         }
 
         // sort items by their Hilbert value (for packing later)
-        sort(hilbertValues, this._boxes, this._indices, 0, this.numItems - 1, this.nodeSize);
+        sort(hilbertValues, this._boxes, this._indices, 0, this.numItems, this.nodeSize, 24);
 
         // generate nodes at each tree level, bottom-up
         for (let i = 0, pos = 0; i < this._levelBounds.length - 1; i++) {
@@ -278,23 +278,61 @@ function upperBound(value, arr) {
     return arr[i];
 }
 
-// custom quicksort that partially sorts bbox data alongside the hilbert values
-function sort(values, boxes, indices, left, right, nodeSize) {
-    if (Math.floor(left / nodeSize) >= Math.floor(right / nodeSize)) return;
+// custom radix sort that partially sorts bbox data alongside the hilbert values
 
-    const pivot = values[(left + right) >> 1];
-    let i = left - 1;
-    let j = right + 1;
+const last = new Uint32Array(256);
+const pointer0 = new Uint32Array(256);
+const pointer8 = new Uint32Array(256);
+const pointer16 = new Uint32Array(256);
+const pointer24 = new Uint32Array(256);
 
-    while (true) {
-        do i++; while (values[i] < pivot);
-        do j--; while (values[j] > pivot);
-        if (i >= j) break;
-        swap(values, boxes, indices, i, j);
+function sort(arr, boxes, indices, start, end, nodeSize, shift) {
+    const ptr =
+        shift === 0 ? pointer0 :
+        shift === 8 ? pointer8 :
+        shift === 16 ? pointer16 : pointer24;
+
+    for (let x = start; x < end; ++x) last[(arr[x] >> shift) & 0xFF]++;
+
+    last[0] += start;
+    ptr[0] = start;
+    for (let x = 1; x < 256; ++x) {
+        ptr[x] = last[x - 1];
+        last[x] += last[x - 1];
     }
 
-    sort(values, boxes, indices, left, j, nodeSize);
-    sort(values, boxes, indices, j + 1, right, nodeSize);
+    for (let x = 0; x < 256; ++x) {
+        let i = ptr[x];
+        while (i !== last[x]) {
+            let value = arr[i], y;
+            while ((y = (value >> shift) & 0xFF) !== x) {
+                value = arr[ptr[y]];
+                swap(arr, boxes, indices, i, ptr[y]++);
+            }
+            i++;
+        }
+        ptr[x] = i;
+        last[x] = 0;
+    }
+
+    if (shift === 0) return;
+
+    for (let x = 0; x < 256; ++x) {
+        const i = x > 0 ? ptr[x - 1] : start;
+        const j = ptr[x];
+        if (Math.floor(i / nodeSize) >= Math.floor((j - 1) / nodeSize)) return;
+        if (j - i > 64) {
+            sort(arr, boxes, indices, i, j, nodeSize, shift - 8);
+        } else {
+            insertionSort(arr, boxes, indices, i, j);
+        }
+    }
+}
+
+function insertionSort(arr, boxes, indices, start, end) {
+    for (let x = start + 1; x < end; ++x) {
+        for (let y = x; y > start && arr[y - 1] > arr[y]; y--) swap(arr, boxes, indices, y, y - 1);
+    }
 }
 
 // swap two values and two corresponding boxes
