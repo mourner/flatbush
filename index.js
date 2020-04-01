@@ -320,11 +320,12 @@ function sort(arr, boxes, indices, start, end, nodeSize, shift) {
     for (let x = 0; x < 256; ++x) {
         const i = x > 0 ? ptr[x - 1] : start;
         const j = ptr[x];
-        if (Math.floor(i / nodeSize) >= Math.floor((j - 1) / nodeSize)) return;
-        if (j - i > 64) {
-            sort(arr, boxes, indices, i, j, nodeSize, shift - 8);
-        } else {
-            insertionSort(arr, boxes, indices, i, j);
+        if (Math.floor(i / nodeSize) < Math.floor((j - 1) / nodeSize)) {
+            if (j - i > 64) {
+                sort(arr, boxes, indices, i, j, nodeSize, shift - 8);
+            } else {
+                insertionSort(arr, boxes, indices, i, j);
+            }
         }
     }
 }
