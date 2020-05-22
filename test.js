@@ -48,7 +48,7 @@ test('indexes a bunch of rectangles', (t) => {
 
     const len = index._boxes.length;
     t.equal(index._boxes.length + index._indices.length, 540);
-    t.same(index._boxes.subarray(len - 4, len), [0, 1, 96, 95]);
+    t.same(Array.from(index._boxes.subarray(len - 4, len)), [0, 1, 96, 95]);
     t.same(index._indices[len / 4 - 1], 400);
 
     t.end();
@@ -80,9 +80,9 @@ test('skips sorting less than nodeSize number of rectangles', (t) => {
 
     const len = index._boxes.length;
 
-    t.same(index._indices, expectedIndices);
+    t.same(Array.from(index._indices), expectedIndices);
     t.equal(len, (numItems + 1) * 4);
-    t.same(index._boxes.subarray(len - 4, len), [rootXMin, rootYMin, rootXMax, rootYMax]);
+    t.same(Array.from(index._boxes.subarray(len - 4, len)), [rootXMin, rootYMin, rootXMax, rootYMax]);
 
     t.end();
 });

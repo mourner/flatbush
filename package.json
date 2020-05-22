@@ -41,18 +41,18 @@
   },
   "homepage": "https://github.com/mourner/flatbush#readme",
   "devDependencies": {
-    "@rollup/plugin-buble": "^0.21.1",
-    "@rollup/plugin-node-resolve": "^7.1.1",
-    "eslint": "^6.8.0",
+    "@rollup/plugin-buble": "^0.21.3",
+    "@rollup/plugin-node-resolve": "^8.0.0",
+    "eslint": "^7.0.0",
     "eslint-config-mourner": "^3.0.0",
     "esm": "^3.2.25",
     "rbush": "^3.0.1",
     "rbush-knn": "^3.0.1",
-    "rollup": "^2.2.0",
+    "rollup": "^2.10.7",
     "rollup-plugin-terser": "^5.3.0",
-    "tape": "^4.13.2"
+    "tape": "^5.0.0"
   },
   "dependencies": {
-    "flatqueue": "^1.2.0"
+    "flatqueue": "^1.2.1"
   }
 }
