@@ -115,8 +115,8 @@ export default class Flatbush {
             return;
         }
 
-        const width = this.maxX - this.minX;
-        const height = this.maxY - this.minY;
+        const width = (this.maxX - this.minX) || 1;
+        const height = (this.maxY - this.minY) || 1;
         const hilbertValues = new Uint32Array(this.numItems);
         const hilbertMax = (1 << 16) - 1;
 
