@@ -228,22 +228,22 @@ export default class Flatbush {
 
                 if (nodeIndex < this.numItems * 4) { // leaf node
                     if (filterFn === undefined || filterFn(index)) {
-                        // put a negative index if it's an item rather than a node, to recognize later
-                        q.push(-index - 1, dist);
+                        // put an odd index if it's an item rather than a node, to recognize later
+                        q.push((index << 1) + 1, dist);
                     }
                 } else {
-                    q.push(index, dist);
+                    q.push(index << 1, dist);
                 }
             }
 
             // pop items from the queue
-            while (q.length && q.peek() < 0) {
+            while (q.length && (q.peek() & 1)) {
                 const dist = q.peekValue();
                 if (dist > maxDistSquared) {
                     q.clear();
                     return results;
                 }
-                results.push(-q.pop() - 1);
+                results.push(q.pop() >> 1);
 
                 if (results.length === maxResults) {
                     q.clear();
@@ -251,7 +251,7 @@ export default class Flatbush {
                 }
             }
 
-            nodeIndex = q.pop();
+            nodeIndex = q.pop() >> 1;
         }
 
         q.clear();
