@@ -83,7 +83,7 @@ Their number must match the one provided when creating a `Flatbush` object.
 
 #### index.search(minX, minY, maxX, maxY[, filterFn])
 
-Returns an array of indices of items in a given bounding box. Item indices refer to the value returned by [`index.add()`](#indexaddminx-miny-maxx-maxy).
+Returns an array of indices of items intersecting or touching a given bounding box. Item indices refer to the value returned by [`index.add()`](#indexaddminx-miny-maxx-maxy).
 
 ```js
 const ids = index.search(10, 10, 20, 20);
