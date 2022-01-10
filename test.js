@@ -172,4 +172,61 @@ test('returns index of newly-added rectangle', (t) => {
     t.end();
 });
 
+test('bbox search query single point (same min/max)', (t) => {
+    const index = new Flatbush(1, 16, Int32Array);
+    index.add(0, 0, 0, 0);
+    //index.add(1, 2, 3, 4);
+    index.finish();
+	
+    const ids = index.search(0, 0, 0, 0);
+	
+    t.same(ids.length, 1);
+    t.same(ids[0], 0);
+    
+    t.end();
+});
+
+test('bbox search query single point (same min/max)', (t) => {
+    const index = new Flatbush(9, 4, Int32Array);
+    index.add(0, 0, 0, 0);
+    index.add(0, 1, 0, 1);
+    index.add(1, 0, 1, 0);
+    index.add(1, 1, 1, 1);
+    index.add(1, 2, 3, 4);
+    index.add(5, 6, 7, 8);
+    index.add(1, 3, 5, 7);
+    index.add(2, 4, 6, 8);
+    index.add(9, 9, 9, 9);
+    index.finish();
+	
+    const ids = index.search(0, 0, 0, 0);
+	
+    t.same(ids.length, 1);
+    t.same(ids[0], 0);
+    
+    t.end();
+});
+
+test('test bigint', (t) => {
+    const index = new Flatbush(9, 4, BigInt64Array);
+    index.add(0n, 0n, 0n, 0n);
+    index.add(0n, 1n, 0n, 1n);
+    index.add(1n, 0n, 1n, 0n);
+    index.add(1n, 1n, 1n, 1n);
+    index.add(1n, 2n, 3n, 4n);
+    index.add(5n, 6n, 7n, 8n);
+    index.add(1n, 3n, 5n, 7n);
+    index.add(2n, 4n, 6n, 8n);
+    index.add(9n, 9n, 9n, 9n);
+    index.finish();
+	
+    const ids = index.search(0, 0, 0, 0);
+	
+    t.same(ids.length, 1);
+    t.same(ids[0], 0);
+    
+    t.end();
+});
+
+
 function compare(a, b) { return a - b; }
