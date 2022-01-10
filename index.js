@@ -70,11 +70,12 @@ export default class Flatbush {
             this.data = new ArrayBuffer(8 + nodesByteSize + numNodes * this.IndexArrayType.BYTES_PER_ELEMENT);
             this._boxes = new this.ArrayType(this.data, 8, numNodes * 4);
             this._indices = new this.IndexArrayType(this.data, 8 + nodesByteSize, numNodes);
+
             this._pos = 0;
-            this.minX = (this._boxes[0] instanceof BigInt) ? BigInt(Number.MAX_SAFE_INTEGER) : Infinity;
-            this.minY = (this._boxes[0] instanceof BigInt) ? BigInt(Number.MAX_SAFE_INTEGER) : Infinity;
-            this.maxX = (this._boxes[0] instanceof BigInt) ? BigInt(Number.MIN_SAFE_INTEGER) : -Infinity;
-            this.maxY = (this._boxes[0] instanceof BigInt) ? BigInt(Number.MIN_SAFE_INTEGER) : -Infinity;
+            this.minX = maxValue(this.ArrayType);
+            this.minY = maxValue(this.ArrayType);
+            this.maxX = minValue(this.ArrayType);
+            this.maxY = minValue(this.ArrayType);
 
             new Uint8Array(this.data, 0, 2).set([0xfb, (VERSION << 4) + arrayTypeIndex]);
             new Uint16Array(this.data, 2, 1)[0] = nodeSize;
@@ -106,7 +107,7 @@ export default class Flatbush {
             throw new Error(`Added ${this._pos >> 2} items when expected ${this.numItems}.`);
         }
 
-		if (this.numItems <= this.nodeSize) {
+        if (this.numItems <= this.nodeSize) {
             // only one node, skip sorting and just fill the root box
             this._boxes[this._pos++] = this.minX;
             this._boxes[this._pos++] = this.minY;
@@ -115,24 +116,21 @@ export default class Flatbush {
             return;
         }
 
-        const one = (this.maxX === 'bigint') ? 1n : 1;
-        const width = (this.maxX - this.minX) || one;
-        const height = (this.maxY - this.minY) || one;
         const hilbertValues = new Uint32Array(this.numItems);
         const hilbertMax = (1 << 16) - 1;
-        const hilbertWidth = (typeof width === 'bigint') ? divideBigInt(BigInt(hilbertMax), width) : hilbertMax / width;
-        const hilbertHeight = (typeof height === 'bigint') ? divideBigInt(BigInt(hilbertMax), height) : hilbertMax / height;
+        const isBigInt = (typeof this.maxX === 'bigint');
+        const width = (this.maxX - this.minX) || (isBigInt ? 1n : 1);
+        const height = (this.maxY - this.minY) || (isBigInt ? 1n : 1);
+        const scaledWidth = isBigInt ? divideBigInt(BigInt(hilbertMax), width) : (hilbertMax / width);
+        const scaledHeight = isBigInt ? divideBigInt(BigInt(hilbertMax), height) : (hilbertMax / height);
         
+
         // map item centers into Hilbert coordinate space and calculate Hilbert values
-        for (let i = 0, pos = 0; i < this.numItems; i++) {
-            const minX = this._boxes[pos++];
-            const minY = this._boxes[pos++];
-            const maxX = this._boxes[pos++];
-            const maxY = this._boxes[pos++];
-            let x = (typeof width === 'bigint') ? divideBigInt(minX + maxX, 2n) : (minX + maxX) / 2;
-            let y = (typeof height === 'bigint') ? divideBigInt(minY + maxY, 2n) : (minY + maxY) / 2;
-            x = Number(hilbertWidth * (x - this.minX));
-            y = Number(hilbertHeight * (y - this.minY));
+        for (let i = 0, pos = 0; i < this.numItems; i++, pos += 4) {
+            let x = this._boxes[pos] + this._boxes[pos+2];
+            let y = this._boxes[pos+1] + this._boxes[pos+3];
+            x = Number(scaledWidth * (isBigInt ? divideBigInt(x, 2n) : (x / 2) - this.minX));
+            y = Number(scaledHeight * (isBigInt ? divideBigInt(y, 2n) : (y / 2) - this.minY));
             hilbertValues[i] = hilbert(x, y);
         }
 
@@ -174,7 +172,7 @@ export default class Flatbush {
         if (this._pos !== this._boxes.length) {
             throw new Error('Data not yet indexed - call index.finish().');
         }
-		
+
         let nodeIndex = this._boxes.length - 4;
         const queue = [];
         const results = [];
@@ -186,7 +184,7 @@ export default class Flatbush {
             // search through child nodes
             for (let pos = nodeIndex; pos < end; pos += 4) {
                 const index = this._indices[pos >> 2] | 0;
-				
+
                 // check if node bbox intersects with query bbox
                 if (maxX < this._boxes[pos]) continue; // maxX < nodeMinX
                 if (maxY < this._boxes[pos + 1]) continue; // maxY < nodeMinY
@@ -328,43 +326,63 @@ function swap(values, boxes, indices, i, j) {
     indices[j] = e;
 }
 
-function divideBigInt(numerator, denominator) {
-	if (numerator < denominator) {
+function maxValue(arrayType) {
+    if (arrayType instanceof BigInt64Array) {
+		return BigInt.asIntN(64, 0x7fffffffffffffffn);
+	}
+    if (arrayType instanceof BigUint64Array) {
+		return BigInt.asUintN(64, 0xffffffffffffffffn);
+	}
+    return Infinity;
+}
+
+function minValue(arrayType) {
+    if (arrayType instanceof BigInt64Array) {
+		return BigInt.asIntN(64, -0x7fffffffffffffffn);
+	}
+    if (arrayType instanceof BigUint64Array) {
 		return 0n;
 	}
-	
-	if (denominator == 1n) {
-		return numerator;
-	}
-	
-	if (numerator < Number.MAX_SAFE_INTEGER && denominator < Number.MAX_SAFE_INTEGER) {
-		return BigInt(Math.floor(Number(numerator) / Number(denominator)));
-	}
-	
-	let findClosestExponent = (value, left = 0n, right = 64n) => {
-		if (left >= right) return left;
-		let mid = (left + right + 1n) >> 1n;
-		let pivot = (1n << mid);
-		
-		if (value > pivot) return findClosestExponent(value, mid + 1n, right);
-		if (value < pivot) return findClosestExponent(value, left, mid - 1n);
-		return mid;
-	};
-	
-	let result = 0n;
-	const expA = findClosestExponent(numerator);
-	const expB = findClosestExponent(denominator);
-	
-	for (let exponent = expA - expB, remainder = numerator; exponent >= 0n && remainder > 0n; --exponent) {
-		let candidate = remainder - (denominator << exponent);
-		
-		if (candidate >= 0n) {
-			result += 1n << exponent;
-			remainder = candidate;
-		}
-	}
-	
-	return result;
+    return -Infinity;
+}
+
+function divideBigInt(numerator, denominator) {
+    if (numerator < denominator) {
+        return 0n;
+    }
+
+    if (denominator == 1n) {
+        return numerator;
+    }
+
+    if (numerator < Number.MAX_SAFE_INTEGER && denominator < Number.MAX_SAFE_INTEGER) {
+        return BigInt(Math.floor(Number(numerator) / Number(denominator)));
+    }
+
+    let findClosestExponent = (value, left = 0n, right = 64n) => {
+        if (left >= right) return left;
+        let mid = (left + right + 1n) >> 1n;
+        let pivot = (1n << mid);
+
+        if (value > pivot) return findClosestExponent(value, mid + 1n, right);
+        if (value < pivot) return findClosestExponent(value, left, mid - 1n);
+        return mid;
+    };
+
+    let result = 0n;
+    const expA = findClosestExponent(numerator);
+    const expB = findClosestExponent(denominator);
+
+    for (let exp = expA - expB, remainder = numerator; exp >= 0n && remainder > 0n; --exp) {
+        let difference = remainder - (denominator << exp);
+
+        if (difference >= 0n) {
+            result += (1n << exp);
+            remainder = difference;
+        }
+    }
+
+    return result;
 }
 
 // Fast Hilbert curve algorithm by http://threadlocalmutex.com/
