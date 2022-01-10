@@ -126,7 +126,7 @@ export default class Flatbush {
         
 
         // map item centers into Hilbert coordinate space and calculate Hilbert values
-        for (let i = 0, pos = 0; i < this.numItems; i++, pos += 4) {
+        for (let i = 0, pos = 0; i < this.numItems; ++i, pos += 4) {
             let x = this._boxes[pos] + this._boxes[pos+2];
             let y = this._boxes[pos+1] + this._boxes[pos+3];
             x = Number(scaledWidth * (isBigInt ? divideBigInt(x, 2n) : (x / 2) - this.minX));
@@ -138,7 +138,7 @@ export default class Flatbush {
         sort(hilbertValues, this._boxes, this._indices, 0, this.numItems - 1, this.nodeSize);
 
         // generate nodes at each tree level, bottom-up
-        for (let i = 0, pos = 0; i < this._levelBounds.length - 1; i++) {
+        for (let i = 0, pos = 0; i < this._levelBounds.length - 1; ++i) {
             const end = this._levelBounds[i];
 
             // generate a parent node for each block of consecutive <nodeSize> nodes
@@ -151,7 +151,7 @@ export default class Flatbush {
                 let nodeMaxX = this._boxes[pos+2];
                 let nodeMaxY = this._boxes[pos+3];
 
-                for (let i = 0; i < this.nodeSize && pos < end; i++, pos += 4) {
+                for (let i = 0; i < this.nodeSize && pos < end; ++i, pos += 4) {
                     if (this._boxes[pos]   < nodeMinX) nodeMinX = this._boxes[pos];
                     if (this._boxes[pos+1] < nodeMinY) nodeMinY = this._boxes[pos+1];
                     if (this._boxes[pos+2] > nodeMaxX) nodeMaxX = this._boxes[pos+2];
@@ -174,29 +174,29 @@ export default class Flatbush {
         }
 
         let nodeIndex = this._boxes.length - 4;
+        const numItems = this.numItems << 2;
+        const nodeSize = this.nodeSize << 2;
         const queue = [];
         const results = [];
 
         while (nodeIndex !== undefined) {
             // find the end index of the node
-            const end = Math.min(nodeIndex + this.nodeSize * 4, upperBound(nodeIndex, this._levelBounds));
+            const end = Math.min(nodeIndex + nodeSize, upperBound(nodeIndex, this._levelBounds));
 
             // search through child nodes
             for (let pos = nodeIndex; pos < end; pos += 4) {
-                const index = this._indices[pos >> 2] | 0;
-
                 // check if node bbox intersects with query bbox
                 if (maxX < this._boxes[pos]) continue; // maxX < nodeMinX
                 if (maxY < this._boxes[pos + 1]) continue; // maxY < nodeMinY
                 if (minX > this._boxes[pos + 2]) continue; // minX > nodeMaxX
                 if (minY > this._boxes[pos + 3]) continue; // minY > nodeMaxY
 
-                if (nodeIndex < this.numItems * 4) {
-                    if (filterFn === undefined || filterFn(index)) {
-                        results.push(index); // leaf item
-                    }
-                } else {
+                const index = this._indices[pos >> 2] | 0;
+				
+                if (nodeIndex >= numItems) {
                     queue.push(index); // node; add it to the search queue
+                } else if (filterFn === undefined || filterFn(index)) {
+                    results.push(index); // leaf item
                 }
             }
 
@@ -211,14 +211,16 @@ export default class Flatbush {
             throw new Error('Data not yet indexed - call index.finish().');
         }
 
-        let nodeIndex = this._boxes.length - 4;
+		let nodeIndex = this._boxes.length - 4;
+        const numItems = this.numItems << 2;
+        const nodeSize = this.nodeSize << 2;
         const q = this._queue;
         const results = [];
         const maxDistSquared = maxDistance * maxDistance;
 
         while (nodeIndex !== undefined) {
             // find the end index of the node
-            const end = Math.min(nodeIndex + this.nodeSize * 4, upperBound(nodeIndex, this._levelBounds));
+            const end = Math.min(nodeIndex + nodeSize, upperBound(nodeIndex, this._levelBounds));
 
             // add child nodes to the queue
             for (let pos = nodeIndex; pos < end; pos += 4) {
@@ -227,14 +229,12 @@ export default class Flatbush {
                 const dx = axisDist(x, this._boxes[pos], this._boxes[pos + 2]);
                 const dy = axisDist(y, this._boxes[pos + 1], this._boxes[pos + 3]);
                 const dist = dx * dx + dy * dy;
-
-                if (nodeIndex < this.numItems * 4) { // leaf node
-                    if (filterFn === undefined || filterFn(index)) {
-                        // put an odd index if it's an item rather than a node, to recognize later
-                        q.push((index << 1) + 1, dist);
-                    }
-                } else {
+				
+                if (nodeIndex >= numItems) { // leaf node
                     q.push(index << 1, dist);
+                } else if (filterFn === undefined || filterFn(index)) {
+                    // put an odd index if it's an item rather than a node, to recognize later
+                    q.push((index << 1) + 1, dist);
                 }
             }
 
