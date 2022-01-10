@@ -211,7 +211,7 @@ export default class Flatbush {
             throw new Error('Data not yet indexed - call index.finish().');
         }
 
-		let nodeIndex = this._boxes.length - 4;
+        let nodeIndex = this._boxes.length - 4;
         const numItems = this.numItems << 2;
         const nodeSize = this.nodeSize << 2;
         const q = this._queue;
@@ -328,21 +328,21 @@ function swap(values, boxes, indices, i, j) {
 
 function maxValue(arrayType) {
     if (arrayType instanceof BigInt64Array) {
-		return BigInt.asIntN(64, 0x7fffffffffffffffn);
-	}
+        return BigInt.asIntN(64, 0x7fffffffffffffffn);
+    }
     if (arrayType instanceof BigUint64Array) {
-		return BigInt.asUintN(64, 0xffffffffffffffffn);
-	}
+        return BigInt.asUintN(64, 0xffffffffffffffffn);
+    }
     return Infinity;
 }
 
 function minValue(arrayType) {
     if (arrayType instanceof BigInt64Array) {
-		return BigInt.asIntN(64, -0x7fffffffffffffffn);
-	}
+        return BigInt.asIntN(64, -0x7fffffffffffffffn);
+    }
     if (arrayType instanceof BigUint64Array) {
-		return 0n;
-	}
+        return 0n;
+    }
     return -Infinity;
 }
 
