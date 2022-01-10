@@ -115,27 +115,26 @@ export default class Flatbush {
             return;
         }
 
-        const width = this.maxX - this.minX;
-        const height = this.maxY - this.minY;
+        const one = (this.maxX === 'bigint') ? 1n : 1;
+        const width = (this.maxX - this.minX) || one;
+        const height = (this.maxY - this.minY) || one;
         const hilbertValues = new Uint32Array(this.numItems);
         const hilbertMax = (1 << 16) - 1;
         const hilbertWidth = (typeof width === 'bigint') ? divideBigInt(BigInt(hilbertMax), width) : hilbertMax / width;
         const hilbertHeight = (typeof height === 'bigint') ? divideBigInt(BigInt(hilbertMax), height) : hilbertMax / height;
-        const one = (typeof height === 'bigint') ? 1n : 1;
-
+        
         // map item centers into Hilbert coordinate space and calculate Hilbert values
-        for (let i = 0; i < this.numItems; i++) {
-            let pos = 4 * i;
+        for (let i = 0, pos = 0; i < this.numItems; i++) {
             const minX = this._boxes[pos++];
             const minY = this._boxes[pos++];
             const maxX = this._boxes[pos++];
             const maxY = this._boxes[pos++];
-            const x = Number(hilbertWidth * ((minX + maxX) >> one - this.minX));
-            const y = Number(hilbertHeight * ((minY + maxY) >> one - this.minY));
+            let x = (typeof width === 'bigint') ? divideBigInt(minX + maxX, 2n) : (minX + maxX) / 2;
+            let y = (typeof height === 'bigint') ? divideBigInt(minY + maxY, 2n) : (minY + maxY) / 2;
+            x = Number(hilbertWidth * (x - this.minX));
+            y = Number(hilbertHeight * (y - this.minY));
             hilbertValues[i] = hilbert(x, y);
         }
-		
-		//for (let item of hilbertValues) console.log(item);
 
         // sort items by their Hilbert value (for packing later)
         sort(hilbertValues, this._boxes, this._indices, 0, this.numItems - 1, this.nodeSize);
