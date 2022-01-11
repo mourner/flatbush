@@ -177,12 +177,12 @@ test('bbox search query single point (same min/max)', (t) => {
     index.add(0, 0, 0, 0);
     //index.add(1, 2, 3, 4);
     index.finish();
-	
+
     const ids = index.search(0, 0, 0, 0);
-	
+
     t.same(ids.length, 1);
     t.same(ids[0], 0);
-    
+
     t.end();
 });
 
@@ -198,33 +198,40 @@ test('bbox search query single point (same min/max)', (t) => {
     index.add(2, 4, 6, 8);
     index.add(9, 9, 9, 9);
     index.finish();
-	
+
     const ids = index.search(0, 0, 0, 0);
-	
+
     t.same(ids.length, 1);
     t.same(ids[0], 0);
-    
+
     t.end();
 });
 
 test('test bigint', (t) => {
     const index = new Flatbush(9, 4, BigInt64Array);
-    index.add(0n, 0n, 0n, 0n);
-    index.add(0n, 1n, 0n, 1n);
-    index.add(1n, 0n, 1n, 0n);
-    index.add(1n, 1n, 1n, 1n);
-    index.add(1n, 2n, 3n, 4n);
-    index.add(5n, 6n, 7n, 8n);
-    index.add(1n, 3n, 5n, 7n);
-    index.add(2n, 4n, 6n, 8n);
-    index.add(9n, 9n, 9n, 9n);
+    index.add(                0n,                 0n,                 0n,                 0n);
+    index.add(                0n, 10000000000000000n,                 0n, 10000000000000000n);
+    index.add(10000000000000000n,                 0n, 10000000000000000n,                 0n);
+    index.add(10000000000000000n, 10000000000000000n, 10000000000000000n, 10000000000000000n);
+    index.add(10000000000000000n, 20000000000000000n, 30000000000000000n, 40000000000000000n);
+    index.add(50000000000000000n, 60000000000000000n, 70000000000000000n, 80000000000000000n);
+    index.add(10000000000000000n, 30000000000000000n, 50000000000000000n, 70000000000000000n);
+    index.add(20000000000000000n, 40000000000000000n, 60000000000000000n, 80000000000000000n);
+    index.add(90000000000000000n, 90000000000000000n, 90000000000000000n, 90000000000000000n);
     index.finish();
 	
-    const ids = index.search(0, 0, 0, 0);
-	
+	const none = index.search(90000000000000001n, 90000000000000001n, 90000000000000001n, 90000000000000001n);
+    t.same(none.length, 0);
+
+    const ids = index.search(10000000000000000n, 10000000000000000n, 10000000000000000n, 10000000000000000n);
     t.same(ids.length, 1);
-    t.same(ids[0], 0);
-    
+    t.same(ids[0], 3);
+
+    const neighbors = index.neighbors(10000000000000000n, 10000000000000000n, 0xffffffffffffffffn, 0xffffffffffffffffn);
+    t.same(neighbors.length, 9);
+    t.same(neighbors[0], 3);
+    t.same(neighbors[8], 8);
+
     t.end();
 });
 

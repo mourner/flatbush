@@ -54,7 +54,7 @@ export default class Flatbush {
         if (arrayTypeIndex < 0) {
             throw new Error(`Unexpected typed array class: ${ArrayType}.`);
         }
-		
+
         this._isBigInt = (this.ArrayType === BigInt64Array || this.ArrayType === BigUint64Array);
 
         if (data && (data instanceof ArrayBuffer)) {
@@ -78,7 +78,7 @@ export default class Flatbush {
             this.minY = maxValue(this.ArrayType);
             this.maxX = minValue(this.ArrayType);
             this.maxY = minValue(this.ArrayType);
-			
+
             new Uint8Array(this.data, 0, 2).set([0xfb, (VERSION << 4) + arrayTypeIndex]);
             new Uint16Array(this.data, 2, 1)[0] = nodeSize;
             new Uint32Array(this.data, 4, 1)[0] = numItems;
@@ -124,11 +124,11 @@ export default class Flatbush {
         const height = (this.maxY - this.minY) || one;
         const hilbertMax = (one << sixteen) - one;
         const hilbertValues = new Uint32Array(this.numItems);
-		
-        const scaleValue = (this._isBigInt) 
-            ? (value, minValue, range) => { return Number(divideBigInt(hilbertMax * (value - minValue * 2n), range * 2n)) } 
+
+        const scaleValue = (this._isBigInt)
+            ? (value, minValue, range) => { return Number(divideBigInt(hilbertMax * (value - minValue * 2n), range * 2n)) }
             : (value, minValue, range) => { return Math.floor(hilbertMax * (value / 2 - minValue) / range) };
-		
+
         // map item centers into Hilbert coordinate space and calculate Hilbert values
         for (let i = 0, pos = 0; i < this.numItems; ++i, pos += 4) {
             const x = scaleValue(this._boxes[pos] + this._boxes[pos+2], this.minX, width);
@@ -194,7 +194,7 @@ export default class Flatbush {
                 if (minY > this._boxes[pos + 3]) continue; // minY > nodeMaxY
 
                 const index = this._indices[pos >> 2] | 0;
-				
+
                 if (nodeIndex >= numItems) {
                     queue.push(index); // node; add it to the search queue
                 } else if (filterFn === undefined || filterFn(index)) {
@@ -212,7 +212,7 @@ export default class Flatbush {
         if (this._pos !== this._boxes.length) {
             throw new Error('Data not yet indexed - call index.finish().');
         }
-		
+
         let nodeIndex = this._boxes.length - 4;
         const numItems = this.numItems << 2;
         const nodeSize = this.nodeSize << 2;
@@ -232,7 +232,7 @@ export default class Flatbush {
                 const dx = axisDist(x, this._boxes[pos], this._boxes[pos + 2], zero);
                 const dy = axisDist(y, this._boxes[pos + 1], this._boxes[pos + 3], zero);
                 const dist = dx * dx + dy * dy;
-				
+
                 if (nodeIndex >= numItems) { // leaf node
                     q.push(index << 1, dist);
                 } else if (filterFn === undefined || filterFn(index)) {
@@ -265,7 +265,7 @@ export default class Flatbush {
     }
 }
 
-function axisDist (k, min, max, within = 0) {
+function axisDist(k, min, max, within = 0) {
     return k < min ? min - k : k <= max ? within : k - max;
 }
 
