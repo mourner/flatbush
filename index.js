@@ -54,6 +54,8 @@ export default class Flatbush {
         if (arrayTypeIndex < 0) {
             throw new Error(`Unexpected typed array class: ${ArrayType}.`);
         }
+		
+        this._isBigInt = (this.ArrayType === BigInt64Array || this.ArrayType === BigUint64Array);
 
         if (data && (data instanceof ArrayBuffer)) {
             this.data = data;
@@ -76,7 +78,7 @@ export default class Flatbush {
             this.minY = maxValue(this.ArrayType);
             this.maxX = minValue(this.ArrayType);
             this.maxY = minValue(this.ArrayType);
-
+			
             new Uint8Array(this.data, 0, 2).set([0xfb, (VERSION << 4) + arrayTypeIndex]);
             new Uint16Array(this.data, 2, 1)[0] = nodeSize;
             new Uint32Array(this.data, 4, 1)[0] = numItems;
@@ -116,13 +118,14 @@ export default class Flatbush {
             return;
         }
 
-        const isBigInt = (typeof this.maxX === 'bigint');
-        const width = (this.maxX - this.minX) || (isBigInt ? 1n : 1);
-        const height = (this.maxY - this.minY) || (isBigInt ? 1n : 1);
-        const hilbertMax = isBigInt ? (1n << 16n) - 1n : (1 << 16) - 1;
+        const one = this._isBigInt ? 1n : 1;
+        const sixteen = this._isBigInt ? 16n : 16;
+        const width = (this.maxX - this.minX) || one;
+        const height = (this.maxY - this.minY) || one;
+        const hilbertMax = (one << sixteen) - one;
         const hilbertValues = new Uint32Array(this.numItems);
 		
-        const scaleValue = (isBigInt) 
+        const scaleValue = (this._isBigInt) 
             ? (value, minValue, range) => { return Number(divideBigInt(hilbertMax * (value - minValue * 2n), range * 2n)) } 
             : (value, minValue, range) => { return Math.floor(hilbertMax * (value / 2 - minValue) / range) };
 		
@@ -209,10 +212,11 @@ export default class Flatbush {
         if (this._pos !== this._boxes.length) {
             throw new Error('Data not yet indexed - call index.finish().');
         }
-
+		
         let nodeIndex = this._boxes.length - 4;
         const numItems = this.numItems << 2;
         const nodeSize = this.nodeSize << 2;
+        const zero = (this._isBigInt ? 0n : 0);
         const q = this._queue;
         const results = [];
         const maxDistSquared = maxDistance * maxDistance;
@@ -225,8 +229,8 @@ export default class Flatbush {
             for (let pos = nodeIndex; pos < end; pos += 4) {
                 const index = this._indices[pos >> 2] | 0;
 
-                const dx = axisDist(x, this._boxes[pos], this._boxes[pos + 2]);
-                const dy = axisDist(y, this._boxes[pos + 1], this._boxes[pos + 3]);
+                const dx = axisDist(x, this._boxes[pos], this._boxes[pos + 2], zero);
+                const dy = axisDist(y, this._boxes[pos + 1], this._boxes[pos + 3], zero);
                 const dist = dx * dx + dy * dy;
 				
                 if (nodeIndex >= numItems) { // leaf node
@@ -246,12 +250,13 @@ export default class Flatbush {
                 }
                 results.push(q.pop() >> 1);
 
-                if (results.length === maxResults) {
+                if (results.length >= maxResults) {
                     q.clear();
                     return results;
                 }
             }
 
+            if (q.length == 0) break;
             nodeIndex = q.pop() >> 1;
         }
 
@@ -260,8 +265,8 @@ export default class Flatbush {
     }
 }
 
-function axisDist(k, min, max) {
-    return k < min ? min - k : k <= max ? 0 : k - max;
+function axisDist (k, min, max, within = 0) {
+    return k < min ? min - k : k <= max ? within : k - max;
 }
 
 // binary search for the first value in the array bigger than the given
@@ -326,20 +331,20 @@ function swap(values, boxes, indices, i, j) {
 }
 
 function maxValue(arrayType) {
-    if (arrayType instanceof BigInt64Array) {
+    if (arrayType === BigInt64Array) {
         return BigInt.asIntN(64, 0x7fffffffffffffffn);
     }
-    if (arrayType instanceof BigUint64Array) {
+    if (arrayType === BigUint64Array) {
         return BigInt.asUintN(64, 0xffffffffffffffffn);
     }
     return Infinity;
 }
 
 function minValue(arrayType) {
-    if (arrayType instanceof BigInt64Array) {
+    if (arrayType === BigInt64Array) {
         return BigInt.asIntN(64, -0x7fffffffffffffffn);
     }
-    if (arrayType instanceof BigUint64Array) {
+    if (arrayType === BigUint64Array) {
         return 0n;
     }
     return -Infinity;
