@@ -29,7 +29,7 @@ export default class Flatbush {
 
     constructor(numItems, nodeSize = 16, ArrayType = Float64Array, data) {
         if (numItems === undefined) throw new Error('Missing required argument: numItems.');
-        if (isNaN(numItems) || numItems <= 0) throw new Error(`Unpexpected numItems value: ${numItems}.`);
+        if (isNaN(numItems) || numItems <= 0) throw new Error(`Unexpected numItems value: ${numItems}.`);
 
         this.numItems = +numItems;
         this.nodeSize = Math.min(Math.max(+nodeSize, 2), 65535);
@@ -212,7 +212,7 @@ export default class Flatbush {
         if (this._pos !== this._boxes.length) {
             throw new Error('Data not yet indexed - call index.finish().');
         }
-		
+
         let nodeIndex = this._boxes.length - 4;
         const numItems = this.numItems << 2;
         const nodeSize = this.nodeSize << 2;
@@ -220,7 +220,7 @@ export default class Flatbush {
         const q = this._queue;
         const results = [];
         const maxDistSquared = maxDistance * maxDistance;
-		
+
         const axisDist = (k, min, max) => {
             return k < min ? min - k : k <= max ? zero : k - max;
         };
