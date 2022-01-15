@@ -212,7 +212,7 @@ export default class Flatbush {
         if (this._pos !== this._boxes.length) {
             throw new Error('Data not yet indexed - call index.finish().');
         }
-
+		
         let nodeIndex = this._boxes.length - 4;
         const numItems = this.numItems << 2;
         const nodeSize = this.nodeSize << 2;
@@ -220,6 +220,10 @@ export default class Flatbush {
         const q = this._queue;
         const results = [];
         const maxDistSquared = maxDistance * maxDistance;
+		
+        const axisDist = (k, min, max) => {
+            return k < min ? min - k : k <= max ? zero : k - max;
+        };
 
         while (nodeIndex !== undefined) {
             // find the end index of the node
@@ -229,8 +233,8 @@ export default class Flatbush {
             for (let pos = nodeIndex; pos < end; pos += 4) {
                 const index = this._indices[pos >> 2] | 0;
 
-                const dx = axisDist(x, this._boxes[pos], this._boxes[pos + 2], zero);
-                const dy = axisDist(y, this._boxes[pos + 1], this._boxes[pos + 3], zero);
+                const dx = axisDist(x, this._boxes[pos], this._boxes[pos + 2]);
+                const dy = axisDist(y, this._boxes[pos + 1], this._boxes[pos + 3]);
                 const dist = dx * dx + dy * dy;
 
                 if (nodeIndex >= numItems) { // leaf node
@@ -263,10 +267,6 @@ export default class Flatbush {
         q.clear();
         return results;
     }
-}
-
-function axisDist(k, min, max, within = 0) {
-    return k < min ? min - k : k <= max ? within : k - max;
 }
 
 // binary search for the first value in the array bigger than the given
