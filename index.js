@@ -333,21 +333,21 @@ function swap(values, boxes, indices, i, j) {
 function maxValue(arrayType) {
     if (arrayType === BigInt64Array) {
         return BigInt.asIntN(64, 0x7fffffffffffffffn);
-    }
-    if (arrayType === BigUint64Array) {
+    } else if (arrayType === BigUint64Array) {
         return BigInt.asUintN(64, 0xffffffffffffffffn);
+    } else {
+        return Infinity;
     }
-    return Infinity;
 }
 
 function minValue(arrayType) {
     if (arrayType === BigInt64Array) {
         return BigInt.asIntN(64, -0x7fffffffffffffffn);
-    }
-    if (arrayType === BigUint64Array) {
+    } else if (arrayType === BigUint64Array) {
         return 0n;
+    } else {
+        return -Infinity;
     }
-    return -Infinity;
 }
 
 function divideBigInt(numerator, denominator) {

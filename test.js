@@ -204,10 +204,18 @@ test('returns index of newly-added rectangle', (t) => {
     t.end();
 });
 
+test('bbox search query accepts filterFn', (t) => {
+  const index = createIndex();
+  const ids = index.search(40, 40, 60, 60, i => i % 2 === 0);
+
+  t.same(ids.length, 1);
+  t.same(ids[0], 6);
+  t.end();
+});
+
 test('bbox search query single point (same min/max)', (t) => {
     const index = new Flatbush(1, 16, Int32Array);
     index.add(0, 0, 0, 0);
-    //index.add(1, 2, 3, 4);
     index.finish();
 
     const ids = index.search(0, 0, 0, 0);
@@ -218,25 +226,26 @@ test('bbox search query single point (same min/max)', (t) => {
     t.end();
 });
 
-test('bbox search query single point (same min/max)', (t) => {
-    const index = new Flatbush(9, 4, Int32Array);
-    index.add(0, 0, 0, 0);
-    index.add(0, 1, 0, 1);
-    index.add(1, 0, 1, 0);
-    index.add(1, 1, 1, 1);
-    index.add(1, 2, 3, 4);
-    index.add(5, 6, 7, 8);
-    index.add(1, 3, 5, 7);
-    index.add(2, 4, 6, 8);
-    index.add(9, 9, 9, 9);
-    index.finish();
+test('test adding one million items', (t) => {
+  const numItems = 1000000;
+  const nodeSize = 16;
+  const index = new Flatbush(numItems, nodeSize, Uint32Array);
+  
+  for (let idx = 0; idx < numItems; ++idx) {
+    index.add(idx, idx, idx, idx);
+  }
 
-    const ids = index.search(0, 0, 0, 0);
+  index.finish();
+  t.same(index.numItems, numItems);
+  t.same(index.nodeSize, nodeSize);
 
-    t.same(ids.length, 1);
-    t.same(ids[0], 0);
-
-    t.end();
+  const ids = index.search(0, 0, 0, 0);
+  t.same(ids.length, 1);
+  t.same(ids[0], 0);
+  
+  const ids2 = index.search(0, 0, numItems, numItems);
+  t.same(ids2.length, numItems);
+  t.end();
 });
 
 test('test bigint', (t) => {
@@ -252,7 +261,7 @@ test('test bigint', (t) => {
     index.add(90000000000000000n, 90000000000000000n, 90000000000000000n, 90000000000000000n);
     index.finish();
 	
-	const none = index.search(90000000000000001n, 90000000000000001n, 90000000000000001n, 90000000000000001n);
+    const none = index.search(90000000000000001n, 90000000000000001n, 90000000000000001n, 90000000000000001n);
     t.same(none.length, 0);
 
     const ids = index.search(10000000000000000n, 10000000000000000n, 10000000000000000n, 10000000000000000n);
@@ -264,10 +273,9 @@ test('test bigint', (t) => {
     t.same(neighbors[0], 3);
     t.same(neighbors[8], 8);
 	
-    const index2 = Flatbush.from(Uint8Array.from(bigIntFlatbush).buffer);
-    t.same(new Uint8Array(index.data), new Uint8Array(index2.data));
+    const baseline = Flatbush.from(Uint8Array.from(bigIntFlatbush).buffer);
+    t.same(new Uint8Array(index.data), new Uint8Array(baseline.data));
     t.end();
 });
-
 
 function compare(a, b) { return a - b; }
