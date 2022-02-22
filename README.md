@@ -8,7 +8,7 @@ Similar to [RBush](https://github.com/mourner/rbush), with the following key dif
 
 - **Static**: you can't add/remove items after initial indexing.
 - **Faster** indexing and search, with much lower **memory** footprint.
-- Index is stored as a single **array buffer** (so you can [transfer](https://developer.mozilla.org/en-US/docs/Web/API/Transferable) it between threads or store it as a compact binary file).
+- Index is stored as a single **array buffer** (so you can [transfer](https://developer.mozilla.org/en-US/docs/Glossary/Transferable_objects) it between threads or store it as a compact binary file).
 
 Supports geographic locations with the [geoflatbush](https://github.com/mourner/geoflatbush) extension.
 
