@@ -62,7 +62,7 @@ Or use directly in the browser with [Skypack CDN](https://www.skypack.dev/view/f
 
 ## API
 
-### `new Flatbush(numItems[, nodeSize, ArrayType])`
+#### `new Flatbush(numItems[, nodeSize, ArrayType])`
 
 Creates a Flatbush index that will hold a given number of items (`numItems`). Additionally accepts:
 
@@ -70,16 +70,16 @@ Creates a Flatbush index that will hold a given number of items (`numItems`). Ad
 - `ArrayType`: the array type used for coordinates storage (`Float64Array` by default);
 other types may be faster in certain cases (e.g. `Int32Array` when your data is integer).
 
-### `index.add(minX, minY, maxX, maxY)`
+#### `index.add(minX, minY, maxX, maxY)`
 
 Adds a given rectangle to the index. Returns a zero-based, incremental number that represents the newly added rectangle.
 
-### `index.finish()`
+#### `index.finish()`
 
 Performs indexing of the added rectangles.
 Their number must match the one provided when creating a `Flatbush` object.
 
-### `index.search(minX, minY, maxX, maxY[, filterFn])`
+#### `index.search(minX, minY, maxX, maxY[, filterFn])`
 
 Returns an array of indices of items intersecting or touching a given bounding box. Item indices refer to the value returned by [`index.add()`](#indexaddminx-miny-maxx-maxy).
 
@@ -94,7 +94,7 @@ and only includes it if the function returned a truthy value.
 const ids = index.search(10, 10, 20, 20, (i) => items[i].foo === 'bar');
 ```
 
-### `index.neighbors(x, y[, maxResults, maxDistance, filterFn])`
+#### `index.neighbors(x, y[, maxResults, maxDistance, filterFn])`
 
 Returns an array of item indices in order of distance from the given `x, y`
 (known as K nearest neighbors, or KNN). Item indices refer to the value returned by [`index.add()`](#indexaddminx-miny-maxx-maxy).
@@ -106,7 +106,7 @@ const ids = index.neighbors(10, 10, 5); // returns 5 ids
 `maxResults` and `maxDistance` are `Infinity` by default.
 Also accepts a `filterFn` similar to `index.search`.
 
-### `Flatbush.from(data)`
+#### `Flatbush.from(data)`
 
 Recreates a Flatbush index from raw `ArrayBuffer` data
 (that's exposed as `index.data` on a previously indexed Flatbush instance).
