@@ -46,20 +46,20 @@ const index = Flatbush.from(e.data);
 
 ## Install
 
-Install using NPM (`npm install flatbush`) or Yarn (`yarn add flatbush`), then:
+### NPM
+
+`npm install flatbush`, then:
 
 ```js
-// import as an ES module
 import Flatbush from 'flatbush';
-
-// or require as a CommonJS module
-const Flatbush = require('flatbush');
 ```
 
-Or use a browser build directly:
+### CDN
 
 ```html
-<script src="https://unpkg.com/flatbush@3.3.1/flatbush.min.js"></script>
+<script type="module">
+    import Flatbush from 'https://cdn.skypack.dev/flatbush';
+</script>
 ```
 
 ## API
@@ -125,14 +125,14 @@ Very useful for transferring indices between threads or storing them in a file.
 
 ## Performance
 
-Running `npm run bench` with Node v10.11.0:
+Running `node bench.js` with Node v14:
 
 bench | flatbush | rbush
 --- | --- | ---
-index 1,000,000 rectangles | 263ms | 1208ms
-1000 searches 10% | 594ms | 1105ms
-1000 searches 1% | 68ms | 213ms
-1000 searches 0.01% | 9ms | 27ms
-1000 searches of 100 neighbors | 29ms | 58ms
-1 search of 1,000,000 neighbors | 148ms | 781ms
-100,000 searches of 1 neighbor | 870ms | 1548ms
+index 1,000,000 rectangles | 273ms | 1143ms
+1000 searches 10% | 575ms | 781ms
+1000 searches 1% | 63ms | 155ms
+1000 searches 0.01% | 6ms | 17ms
+1000 searches of 100 neighbors | 24ms | 43ms
+1 search of 1,000,000 neighbors | 133ms | 280ms
+100,000 searches of 1 neighbor | 710ms | 1170ms
