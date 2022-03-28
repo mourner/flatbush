@@ -46,13 +46,13 @@ const index = Flatbush.from(e.data);
 
 ## Install
 
-With NPM: `npm install flatbush`, then:
+Install with NPM: `npm install flatbush`, then import as a module:
 
 ```js
 import Flatbush from 'flatbush';
 ```
 
-Through [Skypack CDN](https://www.skypack.dev/view/flatbush):
+Or use directly in the browser with [Skypack CDN](https://www.skypack.dev/view/flatbush):
 
 ```html
 <script type="module">
