@@ -13,7 +13,7 @@ Similar to [RBush](https://github.com/mourner/rbush), with the following key dif
 Supports geographic locations with the [geoflatbush](https://github.com/mourner/geoflatbush) extension.
 
 [![Build Status](https://github.com/mourner/flatbush/workflows/Node/badge.svg?branch=master)](https://github.com/mourner/flatbush/actions)
-[![minzipped size](https://badgen.net/bundlephobia/minzip/flatbush)](https://unpkg.com/flatbush)
+![minzipped](https://img.shields.io/badge/minzipped-2.2%20kB-brightgreen.svg)
 [![Simply Awesome](https://img.shields.io/badge/simply-awesome-brightgreen.svg)](https://github.com/mourner/projects)
 
 ## Usage
