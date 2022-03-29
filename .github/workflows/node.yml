@@ -1,11 +1,5 @@
 name: Node
-
-on:
-  push:
-    branches: ['*']
-  pull_request:
-    branches: [master]
-
+on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest

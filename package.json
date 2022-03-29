@@ -2,23 +2,23 @@
   "name": "flatbush",
   "version": "3.3.1",
   "description": "Fast static spatial index for rectangles",
+  "author": "Vladimir Agafonkin",
+  "license": "ISC",
+  "type": "module",
   "main": "flatbush.js",
   "module": "index.js",
-  "unpkg": "flatbush.min.js",
-  "jsdelivr": "flatbush.min.js",
+  "exports": "./index.js",
+  "sideEffects": false,
   "scripts": {
     "pretest": "eslint index.js test.js bench.js",
-    "test": "node -r esm test.js",
-    "bench": "node -r esm bench.js",
-    "build": "rollup -c",
+    "test": "node test.js",
+    "build": "rollup index.js -o flatbush.js -n Flatbush -f umd -p node-resolve",
     "prepublishOnly": "npm run build"
   },
   "files": [
     "index.js",
-    "flatbush.js",
-    "flatbush.min.js"
+    "flatbush.js"
   ],
-  "@std/esm": "js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mourner/flatbush.git"
@@ -34,25 +34,19 @@
     "rectangle",
     "search"
   ],
-  "author": "Vladimir Agafonkin",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/mourner/flatbush/issues"
+  "engines": {
+    "node": ">= 12.17.0"
   },
-  "homepage": "https://github.com/mourner/flatbush#readme",
+  "dependencies": {
+    "flatqueue": "^2.0.3"
+  },
   "devDependencies": {
-    "@rollup/plugin-buble": "^0.21.3",
     "@rollup/plugin-node-resolve": "^13.1.3",
     "eslint": "^8.12.0",
     "eslint-config-mourner": "^3.0.0",
-    "esm": "^3.2.25",
     "rbush": "^3.0.1",
     "rbush-knn": "^3.0.1",
     "rollup": "^2.70.1",
-    "rollup-plugin-terser": "^7.0.2",
     "tape": "^5.5.2"
-  },
-  "dependencies": {
-    "flatqueue": "^1.2.1"
   }
 }

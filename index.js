@@ -180,13 +180,13 @@ export default class Flatbush {
 
             // search through child nodes
             for (let pos = nodeIndex; pos < end; pos += 4) {
-                const index = this._indices[pos >> 2] | 0;
-
                 // check if node bbox intersects with query bbox
                 if (maxX < this._boxes[pos]) continue; // maxX < nodeMinX
                 if (maxY < this._boxes[pos + 1]) continue; // maxY < nodeMinY
                 if (minX > this._boxes[pos + 2]) continue; // minX > nodeMaxX
                 if (minY > this._boxes[pos + 3]) continue; // minY > nodeMaxY
+
+                const index = this._indices[pos >> 2] | 0;
 
                 if (nodeIndex < this.numItems * 4) {
                     if (filterFn === undefined || filterFn(index)) {
