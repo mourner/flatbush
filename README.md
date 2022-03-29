@@ -52,12 +52,18 @@ Install with NPM: `npm install flatbush`, then import as a module:
 import Flatbush from 'flatbush';
 ```
 
-Or use directly in the browser with [Skypack CDN](https://www.skypack.dev/view/flatbush):
+Or use as a module directly in the browser with [jsDelivr](https://www.jsdelivr.com/esm):
 
 ```html
 <script type="module">
-    import Flatbush from 'https://cdn.skypack.dev/flatbush?min';
+    import Flatbush from 'https://cdn.jsdelivr.net/npm/flatbush/+esm';
 </script>
+```
+
+Alternatively, there's a browser bundle with a `Flatbush` global variable:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/flatbush"></script>
 ```
 
 ## API
