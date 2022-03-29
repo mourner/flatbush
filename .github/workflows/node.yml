@@ -15,5 +15,8 @@ jobs:
     - name: Install dependencies
       run: npm install
 
+    - name: Build the bundle
+      run: npm run build
+
     - name: Run tests
       run: npm test
