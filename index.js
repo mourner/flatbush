@@ -188,13 +188,11 @@ export default class Flatbush {
 
                 const index = this._indices[pos >> 2] | 0;
 
-                if (nodeIndex < this.numItems * 4) {
-                    if (filterFn === undefined || filterFn(index)) {
-                        results.push(index); // leaf item
-                    }
-
-                } else {
+                if (nodeIndex >= this.numItems * 4) {
                     queue.push(index); // node; add it to the search queue
+
+                } else if (filterFn === undefined || filterFn(index)) {
+                    results.push(index); // leaf item
                 }
             }
 
@@ -226,13 +224,11 @@ export default class Flatbush {
                 const dy = axisDist(y, this._boxes[pos + 1], this._boxes[pos + 3]);
                 const dist = dx * dx + dy * dy;
 
-                if (nodeIndex < this.numItems * 4) { // leaf node
-                    if (filterFn === undefined || filterFn(index)) {
-                        // put an odd index if it's an item rather than a node, to recognize later
-                        q.push((index << 1) + 1, dist);
-                    }
-                } else {
-                    q.push(index << 1, dist);
+                if (nodeIndex >= this.numItems * 4) {
+                    q.push(index << 1, dist); // node (use even id)
+
+                } else if (filterFn === undefined || filterFn(index)) {
+                    q.push((index << 1) + 1, dist); // leaf item (use odd id)
                 }
             }
 
