@@ -140,3 +140,11 @@ index 1,000,000 rectangles | 273ms | 1143ms
 1000 searches of 100 neighbors | 24ms | 43ms
 1 search of 1,000,000 neighbors | 133ms | 280ms
 100,000 searches of 1 neighbor | 710ms | 1170ms
+
+## Ports
+
+- [jbuckmccready/static_aabb2d_index](https://github.com/jbuckmccready/static_aabb2d_index) (Rust port)
+- [jbuckmccready/Flatbush](https://github.com/jbuckmccready/Flatbush) (C# port)
+- [IMQS/flatbush](https://github.com/IMQS/flatbush) (C++ port)
+- [bmharper/flatbush-python](https://github.com/bmharper/flatbush-python) (Python port)
+- [FlatGeobuf](https://github.com/flatgeobuf/flatgeobuf) (a geospatial format inspired by Flatbush)
