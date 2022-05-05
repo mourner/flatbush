@@ -197,6 +197,7 @@ export default class Flatbush {
 
                 if (nodeIndex >= numItems) {
                     queue.push(index); // node; add it to the search queue
+
                 } else if (filterFn === undefined || filterFn(index)) {
                     results.push(index); // leaf item
                 }
@@ -239,6 +240,7 @@ export default class Flatbush {
 
                 if (nodeIndex >= numItems) { // leaf node
                     q.push(index << 1, dist);
+
                 } else if (filterFn === undefined || filterFn(index)) {
                     // put an odd index if it's an item rather than a node, to recognize later
                     q.push((index << 1) + 1, dist);

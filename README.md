@@ -8,12 +8,12 @@ Similar to [RBush](https://github.com/mourner/rbush), with the following key dif
 
 - **Static**: you can't add/remove items after initial indexing.
 - **Faster** indexing and search, with much lower **memory** footprint.
-- Index is stored as a single **array buffer** (so you can [transfer](https://developer.mozilla.org/en-US/docs/Web/API/Transferable) it between threads or store it as a compact binary file).
+- Index is stored as a single **array buffer** (so you can [transfer](https://developer.mozilla.org/en-US/docs/Glossary/Transferable_objects) it between threads or store it as a compact binary file).
 
 Supports geographic locations with the [geoflatbush](https://github.com/mourner/geoflatbush) extension.
 
 [![Build Status](https://github.com/mourner/flatbush/workflows/Node/badge.svg?branch=master)](https://github.com/mourner/flatbush/actions)
-[![minzipped size](https://badgen.net/bundlephobia/minzip/flatbush)](https://unpkg.com/flatbush)
+[![minzipped size](https://badgen.net/bundlephobia/minzip/flatbush)](https://esm.run/flatbush)
 [![Simply Awesome](https://img.shields.io/badge/simply-awesome-brightgreen.svg)](https://github.com/mourner/projects)
 
 ## Usage
@@ -46,25 +46,29 @@ const index = Flatbush.from(e.data);
 
 ## Install
 
-Install using NPM (`npm install flatbush`) or Yarn (`yarn add flatbush`), then:
+Install with NPM: `npm install flatbush`, then import as a module:
 
 ```js
-// import as an ES module
 import Flatbush from 'flatbush';
-
-// or require as a CommonJS module
-const Flatbush = require('flatbush');
 ```
 
-Or use a browser build directly:
+Or use as a module directly in the browser with [jsDelivr](https://www.jsdelivr.com/esm):
 
 ```html
-<script src="https://unpkg.com/flatbush@3.2.1/flatbush.min.js"></script>
+<script type="module">
+    import Flatbush from 'https://cdn.jsdelivr.net/npm/flatbush/+esm';
+</script>
+```
+
+Alternatively, there's a browser bundle with a `Flatbush` global variable:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/flatbush"></script>
 ```
 
 ## API
 
-#### new Flatbush(numItems[, nodeSize, ArrayType])
+#### `new Flatbush(numItems[, nodeSize, ArrayType])`
 
 Creates a Flatbush index that will hold a given number of items (`numItems`). Additionally accepts:
 
@@ -72,16 +76,16 @@ Creates a Flatbush index that will hold a given number of items (`numItems`). Ad
 - `ArrayType`: the array type used for coordinates storage (`Float64Array` by default);
 other types may be faster in certain cases (e.g. `Int32Array` when your data is integer).
 
-#### index.add(minX, minY, maxX, maxY)
+#### `index.add(minX, minY, maxX, maxY)`
 
 Adds a given rectangle to the index. Returns a zero-based, incremental number that represents the newly added rectangle.
 
-#### index.finish()
+#### `index.finish()`
 
 Performs indexing of the added rectangles.
 Their number must match the one provided when creating a `Flatbush` object.
 
-#### index.search(minX, minY, maxX, maxY[, filterFn])
+#### `index.search(minX, minY, maxX, maxY[, filterFn])`
 
 Returns an array of indices of items intersecting or touching a given bounding box. Item indices refer to the value returned by [`index.add()`](#indexaddminx-miny-maxx-maxy).
 
@@ -96,7 +100,7 @@ and only includes it if the function returned a truthy value.
 const ids = index.search(10, 10, 20, 20, (i) => items[i].foo === 'bar');
 ```
 
-#### index.neighbors(x, y[, maxResults, maxDistance, filterFn])
+#### `index.neighbors(x, y[, maxResults, maxDistance, filterFn])`
 
 Returns an array of item indices in order of distance from the given `x, y`
 (known as K nearest neighbors, or KNN). Item indices refer to the value returned by [`index.add()`](#indexaddminx-miny-maxx-maxy).
@@ -108,13 +112,13 @@ const ids = index.neighbors(10, 10, 5); // returns 5 ids
 `maxResults` and `maxDistance` are `Infinity` by default.
 Also accepts a `filterFn` similar to `index.search`.
 
-#### Flatbush.from(data)
+#### `Flatbush.from(data)`
 
 Recreates a Flatbush index from raw `ArrayBuffer` data
 (that's exposed as `index.data` on a previously indexed Flatbush instance).
 Very useful for transferring indices between threads or storing them in a file.
 
-#### Properties
+### Properties
 
 - `data`: array buffer that holds the index.
 - `minX`, `minY`, `maxX`, `maxY`: bounding box of the data.
@@ -125,14 +129,22 @@ Very useful for transferring indices between threads or storing them in a file.
 
 ## Performance
 
-Running `npm run bench` with Node v10.11.0:
+Running `node bench.js` with Node v14:
 
 bench | flatbush | rbush
 --- | --- | ---
-index 1,000,000 rectangles | 263ms | 1208ms
-1000 searches 10% | 594ms | 1105ms
-1000 searches 1% | 68ms | 213ms
-1000 searches 0.01% | 9ms | 27ms
-1000 searches of 100 neighbors | 29ms | 58ms
-1 search of 1,000,000 neighbors | 148ms | 781ms
-100,000 searches of 1 neighbor | 870ms | 1548ms
+index 1,000,000 rectangles | 273ms | 1143ms
+1000 searches 10% | 575ms | 781ms
+1000 searches 1% | 63ms | 155ms
+1000 searches 0.01% | 6ms | 17ms
+1000 searches of 100 neighbors | 24ms | 43ms
+1 search of 1,000,000 neighbors | 133ms | 280ms
+100,000 searches of 1 neighbor | 710ms | 1170ms
+
+## Ports
+
+- [jbuckmccready/static_aabb2d_index](https://github.com/jbuckmccready/static_aabb2d_index) (Rust port)
+- [jbuckmccready/Flatbush](https://github.com/jbuckmccready/Flatbush) (C# port)
+- [IMQS/flatbush](https://github.com/IMQS/flatbush) (C++ port)
+- [bmharper/flatbush-python](https://github.com/bmharper/flatbush-python) (Python port)
+- [FlatGeobuf](https://github.com/flatgeobuf/flatgeobuf) (a geospatial format inspired by Flatbush)
