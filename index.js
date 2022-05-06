@@ -29,7 +29,7 @@ export default class Flatbush {
 
     constructor(numItems, nodeSize = 16, ArrayType = Float64Array, data) {
         if (numItems === undefined) throw new Error('Missing required argument: numItems.');
-        if (isNaN(numItems) || numItems <= 0) throw new Error(`Unexpected numItems value: ${numItems}.`);
+        if (Number.isNaN(numItems) || numItems <= 0) throw new Error(`Unexpected numItems value: ${numItems}.`);
 
         this.numItems = +numItems;
         this.nodeSize = Math.min(Math.max(+nodeSize, 2), 65535);
@@ -119,20 +119,19 @@ export default class Flatbush {
         }
 
         const one = this._isBigInt ? 1n : 1;
-        const sixteen = this._isBigInt ? 16n : 16;
         const width = (this.maxX - this.minX) || one;
         const height = (this.maxY - this.minY) || one;
-        const hilbertMax = (one << sixteen) - one;
+        const hilbertMax = this._isBigInt ? 32768n : 32768;
         const hilbertValues = new Uint32Array(this.numItems);
 
-        const scaleValue = (this._isBigInt)
-            ? (value, minValue, range) => { return Number(divideBigInt(hilbertMax * (value - minValue * 2n), range * 2n)) }
-            : (value, minValue, range) => { return Math.floor(hilbertMax * (value / 2 - minValue) / range) };
+        const scaleValue = (this._isBigInt) ?
+            (value, minValue, range) => Number(divideBigInt(hilbertMax * (value - minValue * 2n), range * 2n)) :
+            (value, minValue, range) => Math.floor(hilbertMax * (value / 2 - minValue) / range);
 
         // map item centers into Hilbert coordinate space and calculate Hilbert values
         for (let i = 0, pos = 0; i < this.numItems; ++i, pos += 4) {
-            const x = scaleValue(this._boxes[pos] + this._boxes[pos+2], this.minX, width);
-            const y = scaleValue(this._boxes[pos+1] + this._boxes[pos+3], this.minY, height);
+            const x = scaleValue(this._boxes[pos] + this._boxes[pos + 2], this.minX, width);
+            const y = scaleValue(this._boxes[pos + 1] + this._boxes[pos + 3], this.minY, height);
             hilbertValues[i] = hilbert(x, y);
         }
 
@@ -149,15 +148,15 @@ export default class Flatbush {
 
                 // calculate bbox for the new node
                 let nodeMinX = this._boxes[pos];
-                let nodeMinY = this._boxes[pos+1];
-                let nodeMaxX = this._boxes[pos+2];
-                let nodeMaxY = this._boxes[pos+3];
+                let nodeMinY = this._boxes[pos + 1];
+                let nodeMaxX = this._boxes[pos + 2];
+                let nodeMaxY = this._boxes[pos + 3];
 
                 for (let i = 0; i < this.nodeSize && pos < end; ++i, pos += 4) {
                     if (this._boxes[pos]   < nodeMinX) nodeMinX = this._boxes[pos];
-                    if (this._boxes[pos+1] < nodeMinY) nodeMinY = this._boxes[pos+1];
-                    if (this._boxes[pos+2] > nodeMaxX) nodeMaxX = this._boxes[pos+2];
-                    if (this._boxes[pos+3] > nodeMaxY) nodeMaxY = this._boxes[pos+3];
+                    if (this._boxes[pos + 1] < nodeMinY) nodeMinY = this._boxes[pos + 1];
+                    if (this._boxes[pos + 2] > nodeMaxX) nodeMaxX = this._boxes[pos + 2];
+                    if (this._boxes[pos + 3] > nodeMaxY) nodeMaxY = this._boxes[pos + 3];
                 }
 
                 // add the new node to the tree data
@@ -221,10 +220,7 @@ export default class Flatbush {
         const q = this._queue;
         const results = [];
         const maxDistSquared = maxDistance * maxDistance;
-
-        const axisDist = (k, min, max) => {
-            return k < min ? min - k : k <= max ? zero : k - max;
-        };
+        const axisDist = (k, min, max) => (k < min ? min - k : k <= max ? zero : k - max);
 
         while (nodeIndex !== undefined) {
             // find the end index of the node
@@ -262,7 +258,7 @@ export default class Flatbush {
                 }
             }
 
-            if (q.length == 0) break;
+            if (q.length === 0) break;
             nodeIndex = q.pop() >> 1;
         }
 
@@ -357,7 +353,7 @@ function divideBigInt(numerator, denominator) {
         return 0n;
     }
 
-    if (denominator == 1n) {
+    if (denominator === 1n) {
         return numerator;
     }
 
@@ -365,10 +361,10 @@ function divideBigInt(numerator, denominator) {
         return BigInt(Math.floor(Number(numerator) / Number(denominator)));
     }
 
-    let findClosestExponent = (value, left = 0n, right = 64n) => {
+    const findClosestExponent = (value, left = 0n, right = 64n) => {
         if (left >= right) return left;
-        let mid = (left + right + 1n) >> 1n;
-        let pivot = (1n << mid);
+        const mid = (left + right + 1n) >> 1n;
+        const pivot = (1n << mid);
 
         if (value > pivot) return findClosestExponent(value, mid + 1n, right);
         if (value < pivot) return findClosestExponent(value, left, mid - 1n);
@@ -380,7 +376,7 @@ function divideBigInt(numerator, denominator) {
     const expB = findClosestExponent(denominator);
 
     for (let exp = expA - expB, remainder = numerator; exp >= 0n && remainder > 0n; --exp) {
-        let difference = remainder - (denominator << exp);
+        const difference = remainder - (denominator << exp);
 
         if (difference >= 0n) {
             result += (1n << exp);

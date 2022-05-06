@@ -24,7 +24,14 @@
     "url": "git+https://github.com/mourner/flatbush.git"
   },
   "eslintConfig": {
-    "extends": "mourner"
+    "extends": "mourner",
+    "env": {
+      "es2020": true
+    },
+    "parserOptions": {
+      "ecmaVersion": 2021,
+      "sourceType": "module"
+    }
   },
   "keywords": [
     "geometry",
@@ -42,7 +49,7 @@
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^13.1.3",
-    "eslint": "^8.12.0",
+    "eslint": "^8.14.0",
     "eslint-config-mourner": "^3.0.0",
     "rbush": "^3.0.1",
     "rbush-knn": "^3.0.1",
