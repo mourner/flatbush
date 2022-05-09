@@ -3,7 +3,7 @@ import FlatQueue from 'flatqueue';
 
 const ARRAY_TYPES = [
     Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array,
-    Int32Array, Uint32Array, Float32Array, Float64Array
+    Int32Array, Uint32Array, Float32Array, Float64Array, BigInt64Array, BigUint64Array
 ];
 
 const VERSION = 3; // serialized format version
@@ -29,7 +29,7 @@ export default class Flatbush {
 
     constructor(numItems, nodeSize = 16, ArrayType = Float64Array, data) {
         if (numItems === undefined) throw new Error('Missing required argument: numItems.');
-        if (isNaN(numItems) || numItems <= 0) throw new Error(`Unpexpected numItems value: ${numItems}.`);
+        if (Number.isNaN(numItems) || numItems <= 0) throw new Error(`Unexpected numItems value: ${numItems}.`);
 
         this.numItems = +numItems;
         this.nodeSize = Math.min(Math.max(+nodeSize, 2), 65535);
@@ -55,6 +55,8 @@ export default class Flatbush {
             throw new Error(`Unexpected typed array class: ${ArrayType}.`);
         }
 
+        this._isBigInt = (this.ArrayType === BigInt64Array || this.ArrayType === BigUint64Array);
+
         if (data && (data instanceof ArrayBuffer)) {
             this.data = data;
             this._boxes = new this.ArrayType(this.data, 8, numNodes * 4);
@@ -70,11 +72,12 @@ export default class Flatbush {
             this.data = new ArrayBuffer(8 + nodesByteSize + numNodes * this.IndexArrayType.BYTES_PER_ELEMENT);
             this._boxes = new this.ArrayType(this.data, 8, numNodes * 4);
             this._indices = new this.IndexArrayType(this.data, 8 + nodesByteSize, numNodes);
+
             this._pos = 0;
-            this.minX = Infinity;
-            this.minY = Infinity;
-            this.maxX = -Infinity;
-            this.maxY = -Infinity;
+            this.minX = maxValue(this.ArrayType);
+            this.minY = maxValue(this.ArrayType);
+            this.maxX = minValue(this.ArrayType);
+            this.maxY = minValue(this.ArrayType);
 
             new Uint8Array(this.data, 0, 2).set([0xfb, (VERSION << 4) + arrayTypeIndex]);
             new Uint16Array(this.data, 2, 1)[0] = nodeSize;
@@ -115,20 +118,20 @@ export default class Flatbush {
             return;
         }
 
-        const width = (this.maxX - this.minX) || 1;
-        const height = (this.maxY - this.minY) || 1;
+        const one = this._isBigInt ? 1n : 1;
+        const width = (this.maxX - this.minX) || one;
+        const height = (this.maxY - this.minY) || one;
+        const hilbertMax = this._isBigInt ? 32768n : 32768;
         const hilbertValues = new Uint32Array(this.numItems);
-        const hilbertMax = (1 << 16) - 1;
+
+        const scaleValue = (this._isBigInt) ?
+            (value, minValue, range) => Number(divideBigInt(hilbertMax * (value - minValue * 2n), range * 2n)) :
+            (value, minValue, range) => Math.floor(hilbertMax * (value / 2 - minValue) / range);
 
         // map item centers into Hilbert coordinate space and calculate Hilbert values
-        for (let i = 0; i < this.numItems; i++) {
-            let pos = 4 * i;
-            const minX = this._boxes[pos++];
-            const minY = this._boxes[pos++];
-            const maxX = this._boxes[pos++];
-            const maxY = this._boxes[pos++];
-            const x = Math.floor(hilbertMax * ((minX + maxX) / 2 - this.minX) / width);
-            const y = Math.floor(hilbertMax * ((minY + maxY) / 2 - this.minY) / height);
+        for (let i = 0, pos = 0; i < this.numItems; ++i, pos += 4) {
+            const x = scaleValue(this._boxes[pos] + this._boxes[pos + 2], this.minX, width);
+            const y = scaleValue(this._boxes[pos + 1] + this._boxes[pos + 3], this.minY, height);
             hilbertValues[i] = hilbert(x, y);
         }
 
@@ -136,7 +139,7 @@ export default class Flatbush {
         sort(hilbertValues, this._boxes, this._indices, 0, this.numItems - 1, this.nodeSize);
 
         // generate nodes at each tree level, bottom-up
-        for (let i = 0, pos = 0; i < this._levelBounds.length - 1; i++) {
+        for (let i = 0, pos = 0; i < this._levelBounds.length - 1; ++i) {
             const end = this._levelBounds[i];
 
             // generate a parent node for each block of consecutive <nodeSize> nodes
@@ -144,15 +147,16 @@ export default class Flatbush {
                 const nodeIndex = pos;
 
                 // calculate bbox for the new node
-                let nodeMinX = Infinity;
-                let nodeMinY = Infinity;
-                let nodeMaxX = -Infinity;
-                let nodeMaxY = -Infinity;
-                for (let i = 0; i < this.nodeSize && pos < end; i++) {
-                    nodeMinX = Math.min(nodeMinX, this._boxes[pos++]);
-                    nodeMinY = Math.min(nodeMinY, this._boxes[pos++]);
-                    nodeMaxX = Math.max(nodeMaxX, this._boxes[pos++]);
-                    nodeMaxY = Math.max(nodeMaxY, this._boxes[pos++]);
+                let nodeMinX = this._boxes[pos];
+                let nodeMinY = this._boxes[pos + 1];
+                let nodeMaxX = this._boxes[pos + 2];
+                let nodeMaxY = this._boxes[pos + 3];
+
+                for (let i = 0; i < this.nodeSize && pos < end; ++i, pos += 4) {
+                    if (this._boxes[pos]   < nodeMinX) nodeMinX = this._boxes[pos];
+                    if (this._boxes[pos + 1] < nodeMinY) nodeMinY = this._boxes[pos + 1];
+                    if (this._boxes[pos + 2] > nodeMaxX) nodeMaxX = this._boxes[pos + 2];
+                    if (this._boxes[pos + 3] > nodeMaxY) nodeMaxY = this._boxes[pos + 3];
                 }
 
                 // add the new node to the tree data
@@ -171,12 +175,14 @@ export default class Flatbush {
         }
 
         let nodeIndex = this._boxes.length - 4;
+        const numItems = this.numItems << 2;
+        const nodeSize = this.nodeSize << 2;
         const queue = [];
         const results = [];
 
         while (nodeIndex !== undefined) {
             // find the end index of the node
-            const end = Math.min(nodeIndex + this.nodeSize * 4, upperBound(nodeIndex, this._levelBounds));
+            const end = Math.min(nodeIndex + nodeSize, upperBound(nodeIndex, this._levelBounds));
 
             // search through child nodes
             for (let pos = nodeIndex; pos < end; pos += 4) {
@@ -188,7 +194,7 @@ export default class Flatbush {
 
                 const index = this._indices[pos >> 2] | 0;
 
-                if (nodeIndex >= this.numItems * 4) {
+                if (nodeIndex >= numItems) {
                     queue.push(index); // node; add it to the search queue
 
                 } else if (filterFn === undefined || filterFn(index)) {
@@ -208,13 +214,17 @@ export default class Flatbush {
         }
 
         let nodeIndex = this._boxes.length - 4;
+        const numItems = this.numItems << 2;
+        const nodeSize = this.nodeSize << 2;
+        const zero = (this._isBigInt ? 0n : 0);
         const q = this._queue;
         const results = [];
         const maxDistSquared = maxDistance * maxDistance;
+        const axisDist = (k, min, max) => (k < min ? min - k : k <= max ? zero : k - max);
 
         while (nodeIndex !== undefined) {
             // find the end index of the node
-            const end = Math.min(nodeIndex + this.nodeSize * 4, upperBound(nodeIndex, this._levelBounds));
+            const end = Math.min(nodeIndex + nodeSize, upperBound(nodeIndex, this._levelBounds));
 
             // add child nodes to the queue
             for (let pos = nodeIndex; pos < end; pos += 4) {
@@ -224,11 +234,12 @@ export default class Flatbush {
                 const dy = axisDist(y, this._boxes[pos + 1], this._boxes[pos + 3]);
                 const dist = dx * dx + dy * dy;
 
-                if (nodeIndex >= this.numItems * 4) {
-                    q.push(index << 1, dist); // node (use even id)
+                if (nodeIndex >= numItems) { // leaf node
+                    q.push(index << 1, dist);
 
                 } else if (filterFn === undefined || filterFn(index)) {
-                    q.push((index << 1) + 1, dist); // leaf item (use odd id)
+                    // put an odd index if it's an item rather than a node, to recognize later
+                    q.push((index << 1) + 1, dist);
                 }
             }
 
@@ -241,22 +252,19 @@ export default class Flatbush {
                 }
                 results.push(q.pop() >> 1);
 
-                if (results.length === maxResults) {
+                if (results.length >= maxResults) {
                     q.clear();
                     return results;
                 }
             }
 
+            if (q.length === 0) break;
             nodeIndex = q.pop() >> 1;
         }
 
         q.clear();
         return results;
     }
-}
-
-function axisDist(k, min, max) {
-    return k < min ? min - k : k <= max ? 0 : k - max;
 }
 
 // binary search for the first value in the array bigger than the given
@@ -318,6 +326,65 @@ function swap(values, boxes, indices, i, j) {
     const e = indices[i];
     indices[i] = indices[j];
     indices[j] = e;
+}
+
+function maxValue(arrayType) {
+    if (arrayType === BigInt64Array) {
+        return BigInt.asIntN(64, 0x7fffffffffffffffn);
+    } else if (arrayType === BigUint64Array) {
+        return BigInt.asUintN(64, 0xffffffffffffffffn);
+    } else {
+        return Infinity;
+    }
+}
+
+function minValue(arrayType) {
+    if (arrayType === BigInt64Array) {
+        return BigInt.asIntN(64, -0x7fffffffffffffffn);
+    } else if (arrayType === BigUint64Array) {
+        return 0n;
+    } else {
+        return -Infinity;
+    }
+}
+
+function divideBigInt(numerator, denominator) {
+    if (numerator < denominator) {
+        return 0n;
+    }
+
+    if (denominator === 1n) {
+        return numerator;
+    }
+
+    if (numerator < Number.MAX_SAFE_INTEGER && denominator < Number.MAX_SAFE_INTEGER) {
+        return BigInt(Math.floor(Number(numerator) / Number(denominator)));
+    }
+
+    const findClosestExponent = (value, left = 0n, right = 64n) => {
+        if (left >= right) return left;
+        const mid = (left + right + 1n) >> 1n;
+        const pivot = (1n << mid);
+
+        if (value > pivot) return findClosestExponent(value, mid + 1n, right);
+        if (value < pivot) return findClosestExponent(value, left, mid - 1n);
+        return mid;
+    };
+
+    let result = 0n;
+    const expA = findClosestExponent(numerator);
+    const expB = findClosestExponent(denominator);
+
+    for (let exp = expA - expB, remainder = numerator; exp >= 0n && remainder > 0n; --exp) {
+        const difference = remainder - (denominator << exp);
+
+        if (difference >= 0n) {
+            result += (1n << exp);
+            remainder = difference;
+        }
+    }
+
+    return result;
 }
 
 // Fast Hilbert curve algorithm by http://threadlocalmutex.com/

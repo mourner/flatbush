@@ -24,7 +24,14 @@
     "url": "git+https://github.com/mourner/flatbush.git"
   },
   "eslintConfig": {
-    "extends": "mourner"
+    "extends": "mourner",
+    "env": {
+      "es2020": true
+    },
+    "parserOptions": {
+      "ecmaVersion": 2021,
+      "sourceType": "module"
+    }
   },
   "keywords": [
     "geometry",
