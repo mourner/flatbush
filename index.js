@@ -84,9 +84,6 @@ export default class Flatbush {
             new Uint16Array(this.data, 2, 1)[0] = nodeSize;
             new Uint32Array(this.data, 4, 1)[0] = numItems;
         }
-
-        // a priority queue for k-nearest-neighbors queries
-        this._queue = new FlatQueue();
     }
 
     add(minX, minY, maxX, maxY) {
@@ -132,6 +129,9 @@ export default class Flatbush {
             throw new Error(`Added ${this._pos >> 2} items when expected ${this.numItems}.`);
         }
         const boxes = this._boxes;
+
+        // a priority queue for k-nearest-neighbors queries
+        this._queue = new FlatQueue();
 
         if (this.numItems <= this.nodeSize) {
             // only one node, skip sorting and just fill the root box
