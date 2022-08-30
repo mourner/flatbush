@@ -106,8 +106,29 @@ export default class Flatbush {
         return index;
     }
 
+    trim() {
+        const {_boxes, _indices, _pos, minX, minY, maxX, maxY, nodeSize, ArrayType} = this;
+        const numItems = _pos >> 2;
+
+        this.init(numItems, nodeSize, ArrayType);
+
+        this._boxes.set(_boxes.slice(0, this._boxes.length));
+        this._indices.set(_indices.slice(0, this._indices.length));
+
+        this._pos = _pos;
+        this.minX = minX;
+        this.minY = minY;
+        this.maxX = maxX;
+        this.maxY = maxY;
+    }
+
     finish() {
-        if (this._pos >> 2 !== this.numItems) {
+        const numAdded = this._pos >> 2;
+
+        if (numAdded < this.numItems) {
+            this.trim();
+
+        } else if (numAdded > this.numItems) {
             throw new Error(`Added ${this._pos >> 2} items when expected ${this.numItems}.`);
         }
         const boxes = this._boxes;
