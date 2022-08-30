@@ -28,6 +28,10 @@ export default class Flatbush {
     }
 
     constructor(numItems, nodeSize = 16, ArrayType = Float64Array, data) {
+        this.init(numItems, nodeSize, ArrayType, data);
+    }
+
+    init(numItems, nodeSize = 16, ArrayType = Float64Array, data) {
         if (numItems === undefined) throw new Error('Missing required argument: numItems.');
         if (isNaN(numItems) || numItems <= 0) throw new Error(`Unpexpected numItems value: ${numItems}.`);
 
