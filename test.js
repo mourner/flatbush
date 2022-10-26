@@ -1,6 +1,7 @@
 
 import Flatbush from './index.js';
-import test from 'tape';
+import test from 'node:test';
+import assert from 'node:assert/strict';
 
 const data = [
     8, 62, 11, 66, 57, 17, 57, 19, 76, 26, 79, 29, 36, 56, 38, 56, 92, 77, 96, 80, 87, 70, 90, 74,
@@ -43,18 +44,16 @@ function createSmallIndex(numItems, nodeSize) {
 }
 
 
-test('indexes a bunch of rectangles', (t) => {
+test('indexes a bunch of rectangles', () => {
     const index = createIndex();
 
     const len = index._boxes.length;
-    t.equal(index._boxes.length + index._indices.length, 540);
-    t.same(Array.from(index._boxes.subarray(len - 4, len)), [0, 1, 96, 95]);
-    t.same(index._indices[len / 4 - 1], 400);
-
-    t.end();
+    assert.equal(index._boxes.length + index._indices.length, 540);
+    assert.deepEqual(Array.from(index._boxes.subarray(len - 4, len)), [0, 1, 96, 95]);
+    assert.deepEqual(index._indices[len / 4 - 1], 400);
 });
 
-test('skips sorting less than nodeSize number of rectangles', (t) => {
+test('skips sorting less than nodeSize number of rectangles', () => {
     const numItems = 14;
     const nodeSize = 16;
     const index = createSmallIndex(numItems, nodeSize);
@@ -80,14 +79,12 @@ test('skips sorting less than nodeSize number of rectangles', (t) => {
 
     const len = index._boxes.length;
 
-    t.same(Array.from(index._indices), expectedIndices);
-    t.equal(len, (numItems + 1) * 4);
-    t.same(Array.from(index._boxes.subarray(len - 4, len)), [rootXMin, rootYMin, rootXMax, rootYMax]);
-
-    t.end();
+    assert.deepEqual(Array.from(index._indices), expectedIndices);
+    assert.equal(len, (numItems + 1) * 4);
+    assert.deepEqual(Array.from(index._boxes.subarray(len - 4, len)), [rootXMin, rootYMin, rootXMax, rootYMax]);
 });
 
-test('performs bbox search', (t) => {
+test('performs bbox search', () => {
     const index = createIndex();
 
     const ids = index.search(40, 40, 60, 60);
@@ -100,64 +97,55 @@ test('performs bbox search', (t) => {
         results.push(data[4 * ids[i] + 3]);
     }
 
-    t.same(results.sort(compare), [57, 59, 58, 59, 48, 53, 52, 56, 40, 42, 43, 43, 43, 41, 47, 43].sort(compare));
-
-    t.end();
+    assert.deepEqual(results.sort(compare), [57, 59, 58, 59, 48, 53, 52, 56, 40, 42, 43, 43, 43, 41, 47, 43].sort(compare));
 });
 
-test('reconstructs an index from array buffer', (t) => {
+test('reconstructs an index from array buffer', () => {
     const index = createIndex();
     const index2 = Flatbush.from(index.data);
 
-    t.same(index, index2);
-    t.end();
+    assert.deepEqual(index, index2);
 });
 
-test('throws an error if added less items than the index size', (t) => {
-    t.throws(() => {
+test('throws an error if added less items than the index size', () => {
+    assert.throws(() => {
         const index = new Flatbush(data.length / 4);
         index.finish();
     });
-    t.end();
 });
 
-test('throws an error if searching before indexing', (t) => {
-    t.throws(() => {
+test('throws an error if searching before indexing', () => {
+    assert.throws(() => {
         const index = new Flatbush(data.length / 4);
         index.search(0, 0, 20, 20);
     });
-    t.end();
 });
 
-test('does not freeze on numItems = 0', {timeout: 100}, (t) => {
-    t.throws(() => {
+test('does not freeze on numItems = 0', {timeout: 100}, () => {
+    assert.throws(() => {
         new Flatbush(0); // eslint-disable-line
     });
-    t.end();
 });
 
-test('performs a k-nearest-neighbors query', (t) => {
+test('performs a k-nearest-neighbors query', () => {
     const index = createIndex();
     const ids = index.neighbors(50, 50, 3);
-    t.same(ids.sort(compare), [31, 6, 75].sort(compare));
-    t.end();
+    assert.deepEqual(ids.sort(compare), [31, 6, 75].sort(compare));
 });
 
-test('k-nearest-neighbors query accepts maxDistance', (t) => {
+test('k-nearest-neighbors query accepts maxDistance', () => {
     const index = createIndex();
     const ids = index.neighbors(50, 50, Infinity, 12);
-    t.same(ids.sort(compare), [6, 29, 31, 75, 85].sort(compare));
-    t.end();
+    assert.deepEqual(ids.sort(compare), [6, 29, 31, 75, 85].sort(compare));
 });
 
-test('k-nearest-neighbors query accepts filterFn', (t) => {
+test('k-nearest-neighbors query accepts filterFn', () => {
     const index = createIndex();
     const ids = index.neighbors(50, 50, 6, Infinity, i => i % 2 === 0);
-    t.same(ids.sort(compare), [6, 16, 18, 24, 54, 80].sort(compare));
-    t.end();
+    assert.deepEqual(ids.sort(compare), [6, 16, 18, 24, 54, 80].sort(compare));
 });
 
-test('returns index of newly-added rectangle', (t) => {
+test('returns index of newly-added rectangle', () => {
     const count = 5;
     const index = new Flatbush(count);
 
@@ -168,8 +156,7 @@ test('returns index of newly-added rectangle', (t) => {
     }
 
     const expectedSequence = Array.from(Array(count), (v, i) => i);
-    t.same(ids, expectedSequence);
-    t.end();
+    assert.deepEqual(ids, expectedSequence);
 });
 
 function compare(a, b) { return a - b; }

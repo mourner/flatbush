@@ -41,12 +41,11 @@
     "flatqueue": "^2.0.3"
   },
   "devDependencies": {
-    "@rollup/plugin-node-resolve": "^13.3.0",
-    "eslint": "^8.15.0",
+    "@rollup/plugin-node-resolve": "^15.0.1",
+    "eslint": "^8.26.0",
     "eslint-config-mourner": "^3.0.0",
     "rbush": "^3.0.1",
     "rbush-knn": "^3.0.1",
-    "rollup": "^2.72.1",
-    "tape": "^5.5.3"
+    "rollup": "^3.2.3"
   }
 }
