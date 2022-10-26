@@ -87,11 +87,12 @@ export default class Flatbush {
 
     add(minX, minY, maxX, maxY) {
         const index = this._pos >> 2;
+        const boxes = this._boxes;
         this._indices[index] = index;
-        this._boxes[this._pos++] = minX;
-        this._boxes[this._pos++] = minY;
-        this._boxes[this._pos++] = maxX;
-        this._boxes[this._pos++] = maxY;
+        boxes[this._pos++] = minX;
+        boxes[this._pos++] = minY;
+        boxes[this._pos++] = maxX;
+        boxes[this._pos++] = maxY;
 
         if (minX < this.minX) this.minX = minX;
         if (minY < this.minY) this.minY = minY;
@@ -105,13 +106,14 @@ export default class Flatbush {
         if (this._pos >> 2 !== this.numItems) {
             throw new Error(`Added ${this._pos >> 2} items when expected ${this.numItems}.`);
         }
+        const boxes = this._boxes;
 
         if (this.numItems <= this.nodeSize) {
             // only one node, skip sorting and just fill the root box
-            this._boxes[this._pos++] = this.minX;
-            this._boxes[this._pos++] = this.minY;
-            this._boxes[this._pos++] = this.maxX;
-            this._boxes[this._pos++] = this.maxY;
+            boxes[this._pos++] = this.minX;
+            boxes[this._pos++] = this.minY;
+            boxes[this._pos++] = this.maxX;
+            boxes[this._pos++] = this.maxY;
             return;
         }
 
@@ -121,19 +123,18 @@ export default class Flatbush {
         const hilbertMax = (1 << 16) - 1;
 
         // map item centers into Hilbert coordinate space and calculate Hilbert values
-        for (let i = 0; i < this.numItems; i++) {
-            let pos = 4 * i;
-            const minX = this._boxes[pos++];
-            const minY = this._boxes[pos++];
-            const maxX = this._boxes[pos++];
-            const maxY = this._boxes[pos++];
+        for (let i = 0, pos = 0; i < this.numItems; i++) {
+            const minX = boxes[pos++];
+            const minY = boxes[pos++];
+            const maxX = boxes[pos++];
+            const maxY = boxes[pos++];
             const x = Math.floor(hilbertMax * ((minX + maxX) / 2 - this.minX) / width);
             const y = Math.floor(hilbertMax * ((minY + maxY) / 2 - this.minY) / height);
             hilbertValues[i] = hilbert(x, y);
         }
 
         // sort items by their Hilbert value (for packing later)
-        sort(hilbertValues, this._boxes, this._indices, 0, this.numItems - 1, this.nodeSize);
+        sort(hilbertValues, boxes, this._indices, 0, this.numItems - 1, this.nodeSize);
 
         // generate nodes at each tree level, bottom-up
         for (let i = 0, pos = 0; i < this._levelBounds.length - 1; i++) {
@@ -144,23 +145,23 @@ export default class Flatbush {
                 const nodeIndex = pos;
 
                 // calculate bbox for the new node
-                let nodeMinX = Infinity;
-                let nodeMinY = Infinity;
-                let nodeMaxX = -Infinity;
-                let nodeMaxY = -Infinity;
-                for (let i = 0; i < this.nodeSize && pos < end; i++) {
-                    nodeMinX = Math.min(nodeMinX, this._boxes[pos++]);
-                    nodeMinY = Math.min(nodeMinY, this._boxes[pos++]);
-                    nodeMaxX = Math.max(nodeMaxX, this._boxes[pos++]);
-                    nodeMaxY = Math.max(nodeMaxY, this._boxes[pos++]);
+                let nodeMinX = boxes[pos++];
+                let nodeMinY = boxes[pos++];
+                let nodeMaxX = boxes[pos++];
+                let nodeMaxY = boxes[pos++];
+                for (let j = 1; j < this.nodeSize && pos < end; j++) {
+                    nodeMinX = Math.min(nodeMinX, boxes[pos++]);
+                    nodeMinY = Math.min(nodeMinY, boxes[pos++]);
+                    nodeMaxX = Math.max(nodeMaxX, boxes[pos++]);
+                    nodeMaxY = Math.max(nodeMaxY, boxes[pos++]);
                 }
 
                 // add the new node to the tree data
                 this._indices[this._pos >> 2] = nodeIndex;
-                this._boxes[this._pos++] = nodeMinX;
-                this._boxes[this._pos++] = nodeMinY;
-                this._boxes[this._pos++] = nodeMaxX;
-                this._boxes[this._pos++] = nodeMaxY;
+                boxes[this._pos++] = nodeMinX;
+                boxes[this._pos++] = nodeMinY;
+                boxes[this._pos++] = nodeMaxX;
+                boxes[this._pos++] = nodeMaxY;
             }
         }
     }
