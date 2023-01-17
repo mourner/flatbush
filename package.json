@@ -13,6 +13,7 @@
     "pretest": "eslint index.js test.js bench.js",
     "test": "node test.js",
     "build": "rollup index.js -o flatbush.js -n Flatbush -f umd -p node-resolve",
+    "build:esm": "rollup index.js -o flatbush.esm.js -n Flatbush -f esm -p node-resolve",
     "prepublishOnly": "npm run build"
   },
   "files": [
@@ -42,11 +43,11 @@
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^15.0.1",
-    "eslint": "^8.31.0",
+    "eslint": "^8.32.0",
     "eslint-config-mourner": "^3.0.0",
     "rbush": "^3.0.1",
     "rbush-knn": "^3.0.1",
     "rollup": "^3.10.0",
-    "tape": "^5.6.1"
+    "tape": "^5.6.3"
   }
 }
