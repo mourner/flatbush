@@ -11,7 +11,7 @@
   "sideEffects": false,
   "scripts": {
     "pretest": "eslint index.js test.js bench.js",
-    "test": "node test.js",
+    "test": "node --test --test-reporter spec test.js",
     "build": "rollup index.js -o flatbush.js -n Flatbush -f umd -p node-resolve",
     "prepublishOnly": "npm run build"
   },
