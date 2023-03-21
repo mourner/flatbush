@@ -42,10 +42,10 @@
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^15.0.1",
-    "eslint": "^8.26.0",
+    "eslint": "^8.36.0",
     "eslint-config-mourner": "^3.0.0",
     "rbush": "^3.0.1",
     "rbush-knn": "^3.0.1",
-    "rollup": "^3.2.3"
+    "rollup": "^3.20.0"
   }
 }
