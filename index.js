@@ -1,4 +1,4 @@
-
+/* global SharedArrayBuffer */
 import FlatQueue from 'flatqueue';
 
 const ARRAY_TYPES = [
@@ -11,8 +11,8 @@ const VERSION = 3; // serialized format version
 export default class Flatbush {
 
     static from(data) {
-        if (!(data instanceof ArrayBuffer)) {
-            throw new Error('Data must be an instance of ArrayBuffer.');
+        if (!(data instanceof ArrayBuffer) && SharedArrayBuffer && !(data instanceof SharedArrayBuffer)) {
+            throw new Error('Data must be an instance of ArrayBuffer or SharedArrayBuffer.');
         }
         const [magic, versionAndType] = new Uint8Array(data, 0, 2);
         if (magic !== 0xfb) {
@@ -55,7 +55,7 @@ export default class Flatbush {
             throw new Error(`Unexpected typed array class: ${ArrayType}.`);
         }
 
-        if (data && (data instanceof ArrayBuffer)) {
+        if (data && ((data instanceof ArrayBuffer) || (SharedArrayBuffer && data instanceof SharedArrayBuffer))) {
             this.data = data;
             this._boxes = new this.ArrayType(this.data, 8, numNodes * 4);
             this._indices = new this.IndexArrayType(this.data, 8 + nodesByteSize, numNodes);
