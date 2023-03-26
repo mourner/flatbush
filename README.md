@@ -68,13 +68,14 @@ Alternatively, there's a browser bundle with a `Flatbush` global variable:
 
 ## API
 
-#### `new Flatbush(numItems[, nodeSize, ArrayType])`
+#### `new Flatbush(numItems[, nodeSize, ArrayType, useSharedArrayBuffer])`
 
 Creates a Flatbush index that will hold a given number of items (`numItems`). Additionally accepts:
 
 - `nodeSize`: size of the tree node (`16` by default); experiment with different values for best performance (increasing this value makes indexing faster and queries slower, and vise versa).
 - `ArrayType`: the array type used for coordinates storage (`Float64Array` by default);
 other types may be faster in certain cases (e.g. `Int32Array` when your data is integer).
+- `useSharedArrayBuffer`: set `true` if you prefer to use a `SharedArrayBuffer` in place of `ArrayBuffer` (`false` by default). This kind of data structure can be shared between threads.
 
 #### `index.add(minX, minY, maxX, maxY)`
 
@@ -114,9 +115,9 @@ Also accepts a `filterFn` similar to `index.search`.
 
 #### `Flatbush.from(data)`
 
-Recreates a Flatbush index from raw `ArrayBuffer` data
+Recreates a Flatbush index from raw `ArrayBuffer` or `SharedArrayBuffer` data
 (that's exposed as `index.data` on a previously indexed Flatbush instance).
-Very useful for transferring indices between threads or storing them in a file.
+Very useful for transferring or sharing indices between threads or storing them in a file.
 
 ### Properties
 
