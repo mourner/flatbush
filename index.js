@@ -24,12 +24,13 @@ export default class Flatbush {
         const [nodeSize] = new Uint16Array(data, 2, 1);
         const [numItems] = new Uint32Array(data, 4, 1);
 
-        return new Flatbush(numItems, nodeSize, ARRAY_TYPES[versionAndType & 0x0f], data);
+        return new Flatbush(numItems, nodeSize, ARRAY_TYPES[versionAndType & 0x0f], undefined, data);
     }
 
-    constructor(numItems, nodeSize = 16, ArrayType = Float64Array, data) {
+    constructor(numItems, nodeSize = 16, ArrayType = Float64Array, useSharedArrayBuffer = false, data) {
         if (numItems === undefined) throw new Error('Missing required argument: numItems.');
-        if (isNaN(numItems) || numItems <= 0) throw new Error(`Unpexpected numItems value: ${numItems}.`);
+        if (isNaN(numItems) || numItems <= 0) throw new Error(`Unexpected numItems value: ${numItems}.`);
+        if (useSharedArrayBuffer && !SharedArrayBuffer) throw new Error('SharedArrayBuffer not available in your runtime.');
 
         this.numItems = +numItems;
         this.nodeSize = Math.min(Math.max(+nodeSize, 2), 65535);
@@ -46,6 +47,7 @@ export default class Flatbush {
         } while (n !== 1);
 
         this.ArrayType = ArrayType || Float64Array;
+        this.ArrayBufferType = useSharedArrayBuffer ? SharedArrayBuffer : ArrayBuffer;
         this.IndexArrayType = numNodes < 16384 ? Uint16Array : Uint32Array;
 
         const arrayTypeIndex = ARRAY_TYPES.indexOf(this.ArrayType);
@@ -67,7 +69,7 @@ export default class Flatbush {
             this.maxY = this._boxes[this._pos - 1];
 
         } else {
-            this.data = new ArrayBuffer(8 + nodesByteSize + numNodes * this.IndexArrayType.BYTES_PER_ELEMENT);
+            this.data = new this.ArrayBufferType(8 + nodesByteSize + numNodes * this.IndexArrayType.BYTES_PER_ELEMENT);
             this._boxes = new this.ArrayType(this.data, 8, numNodes * 4);
             this._indices = new this.IndexArrayType(this.data, 8 + nodesByteSize, numNodes);
             this._pos = 0;
