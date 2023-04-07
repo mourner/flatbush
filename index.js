@@ -1,4 +1,3 @@
-/* global SharedArrayBuffer */
 import FlatQueue from 'flatqueue';
 
 const ARRAY_TYPES = [
@@ -11,7 +10,7 @@ const VERSION = 3; // serialized format version
 export default class Flatbush {
 
     static from(data) {
-        if (!(data instanceof ArrayBuffer) && SharedArrayBuffer && !(data instanceof SharedArrayBuffer)) {
+        if (!(data instanceof ArrayBuffer) && (!global.SharedArrayBuffer || !(data instanceof global.SharedArrayBuffer))) {
             throw new Error('Data must be an instance of ArrayBuffer or SharedArrayBuffer.');
         }
         const [magic, versionAndType] = new Uint8Array(data, 0, 2);
@@ -30,7 +29,7 @@ export default class Flatbush {
     constructor(numItems, nodeSize = 16, ArrayType = Float64Array, useSharedArrayBuffer = false, data) {
         if (numItems === undefined) throw new Error('Missing required argument: numItems.');
         if (isNaN(numItems) || numItems <= 0) throw new Error(`Unexpected numItems value: ${numItems}.`);
-        if (useSharedArrayBuffer && !SharedArrayBuffer) throw new Error('SharedArrayBuffer not available in your runtime.');
+        if (useSharedArrayBuffer && !global.SharedArrayBuffer) throw new Error('SharedArrayBuffer not available in your runtime.');
 
         this.numItems = +numItems;
         this.nodeSize = Math.min(Math.max(+nodeSize, 2), 65535);
@@ -47,7 +46,7 @@ export default class Flatbush {
         } while (n !== 1);
 
         this.ArrayType = ArrayType || Float64Array;
-        this.ArrayBufferType = useSharedArrayBuffer ? SharedArrayBuffer : ArrayBuffer;
+        this.ArrayBufferType = useSharedArrayBuffer ? global.SharedArrayBuffer : ArrayBuffer;
         this.IndexArrayType = numNodes < 16384 ? Uint16Array : Uint32Array;
 
         const arrayTypeIndex = ARRAY_TYPES.indexOf(this.ArrayType);
@@ -57,7 +56,7 @@ export default class Flatbush {
             throw new Error(`Unexpected typed array class: ${ArrayType}.`);
         }
 
-        if (data && ((data instanceof ArrayBuffer) || (SharedArrayBuffer && data instanceof SharedArrayBuffer))) {
+        if (data && ((data instanceof ArrayBuffer) || (global.SharedArrayBuffer && data instanceof global.SharedArrayBuffer))) {
             this.data = data;
             this._boxes = new this.ArrayType(this.data, 8, numNodes * 4);
             this._indices = new this.IndexArrayType(this.data, 8 + nodesByteSize, numNodes);
