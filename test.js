@@ -23,6 +23,8 @@ const data = [
     89, 56, 74, 60, 76, 63, 62, 66, 65, 67
 ];
 
+const StoredSharedArrayBuffer = global.SharedArrayBuffer;
+
 function createIndex() {
     const index = new Flatbush(data.length / 4);
 
@@ -37,6 +39,16 @@ function createIndex() {
 function createSmallIndex(numItems, nodeSize) {
     const index = new Flatbush(numItems, nodeSize);
     for (let i = 0; i < 4 * numItems; i += 4) {
+        index.add(data[i], data[i + 1], data[i + 2], data[i + 3]);
+    }
+    index.finish();
+    return index;
+}
+
+function createIndexSharedArrayBuffer() {
+    const index = new Flatbush(data.length / 4, 16, Float64Array, true);
+
+    for (let i = 0; i < data.length; i += 4) {
         index.add(data[i], data[i + 1], data[i + 2], data[i + 3]);
     }
     index.finish();
@@ -158,5 +170,37 @@ test('returns index of newly-added rectangle', () => {
     const expectedSequence = Array.from(Array(count), (v, i) => i);
     assert.deepEqual(ids, expectedSequence);
 });
+
+test('creates an index using SharedArrayBuffer', () => {
+    enableSharedArrayBuffer();
+
+    const index = createIndexSharedArrayBuffer();
+    assert(index.data instanceof global.SharedArrayBuffer);
+});
+
+test('throws an error when SharedArrayBuffer is not available', () => {
+    disableSharedArrayBuffer();
+
+    assert.throws(
+        () => createIndexSharedArrayBuffer()
+    );
+});
+
+test('reconstructs an index from shared array buffer', () => {
+    enableSharedArrayBuffer();
+
+    const index = createIndexSharedArrayBuffer();
+    const index2 = Flatbush.from(index.data);
+
+    assert.deepEqual(index, index2);
+});
+
+function disableSharedArrayBuffer() {
+    delete global.SharedArrayBuffer;
+}
+
+function enableSharedArrayBuffer() {
+    global.SharedArrayBuffer = StoredSharedArrayBuffer;
+}
 
 function compare(a, b) { return a - b; }
