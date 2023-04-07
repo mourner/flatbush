@@ -46,7 +46,7 @@ export default class Flatbush {
         } while (n !== 1);
 
         this.ArrayType = ArrayType || Float64Array;
-        this.ArrayBufferType = useSharedArrayBuffer ? global.SharedArrayBuffer : ArrayBuffer;
+        this.ArrayBufferType = useSharedArrayBuffer || (data && (global.SharedArrayBuffer && data instanceof global.SharedArrayBuffer)) ? global.SharedArrayBuffer : ArrayBuffer;
         this.IndexArrayType = numNodes < 16384 ? Uint16Array : Uint32Array;
 
         const arrayTypeIndex = ARRAY_TYPES.indexOf(this.ArrayType);
