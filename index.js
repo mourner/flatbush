@@ -10,7 +10,7 @@ const VERSION = 3; // serialized format version
 export default class Flatbush {
 
     static from(data) {
-        if (!(data instanceof ArrayBuffer) && (!global.SharedArrayBuffer || !(data instanceof global.SharedArrayBuffer))) {
+        if (data.constructor.name !== 'ArrayBuffer' && data.constructor.name !== 'SharedArrayBuffer') {
             throw new Error('Data must be an instance of ArrayBuffer or SharedArrayBuffer.');
         }
         const [magic, versionAndType] = new Uint8Array(data, 0, 2);
@@ -26,10 +26,9 @@ export default class Flatbush {
         return new Flatbush(numItems, nodeSize, ARRAY_TYPES[versionAndType & 0x0f], undefined, data);
     }
 
-    constructor(numItems, nodeSize = 16, ArrayType = Float64Array, useSharedArrayBuffer = false, data) {
+    constructor(numItems, nodeSize = 16, ArrayType = Float64Array, ArrayBufferType = ArrayBuffer, data) {
         if (numItems === undefined) throw new Error('Missing required argument: numItems.');
         if (isNaN(numItems) || numItems <= 0) throw new Error(`Unexpected numItems value: ${numItems}.`);
-        if (useSharedArrayBuffer && !global.SharedArrayBuffer) throw new Error('SharedArrayBuffer not available in your runtime.');
 
         this.numItems = +numItems;
         this.nodeSize = Math.min(Math.max(+nodeSize, 2), 65535);
@@ -46,7 +45,6 @@ export default class Flatbush {
         } while (n !== 1);
 
         this.ArrayType = ArrayType || Float64Array;
-        this.ArrayBufferType = useSharedArrayBuffer || (data && (global.SharedArrayBuffer && data instanceof global.SharedArrayBuffer)) ? global.SharedArrayBuffer : ArrayBuffer;
         this.IndexArrayType = numNodes < 16384 ? Uint16Array : Uint32Array;
 
         const arrayTypeIndex = ARRAY_TYPES.indexOf(this.ArrayType);
@@ -56,7 +54,7 @@ export default class Flatbush {
             throw new Error(`Unexpected typed array class: ${ArrayType}.`);
         }
 
-        if (data && ((data instanceof ArrayBuffer) || (global.SharedArrayBuffer && data instanceof global.SharedArrayBuffer))) {
+        if (data && (data.constructor.name === 'ArrayBuffer' || data.constructor.name === 'SharedArrayBuffer')) {
             this.data = data;
             this._boxes = new this.ArrayType(this.data, 8, numNodes * 4);
             this._indices = new this.IndexArrayType(this.data, 8 + nodesByteSize, numNodes);
@@ -68,7 +66,7 @@ export default class Flatbush {
             this.maxY = this._boxes[this._pos - 1];
 
         } else {
-            this.data = new this.ArrayBufferType(8 + nodesByteSize + numNodes * this.IndexArrayType.BYTES_PER_ELEMENT);
+            this.data = new ArrayBufferType(8 + nodesByteSize + numNodes * this.IndexArrayType.BYTES_PER_ELEMENT);
             this._boxes = new this.ArrayType(this.data, 8, numNodes * 4);
             this._indices = new this.IndexArrayType(this.data, 8 + nodesByteSize, numNodes);
             this._pos = 0;
