@@ -75,7 +75,8 @@ Creates a Flatbush index that will hold a given number of items (`numItems`). Ad
 - `nodeSize`: size of the tree node (`16` by default); experiment with different values for best performance (increasing this value makes indexing faster and queries slower, and vise versa).
 - `ArrayType`: the array type used for coordinates storage (`Float64Array` by default);
 other types may be faster in certain cases (e.g. `Int32Array` when your data is integer).
-- `useSharedArrayBuffer`: set `true` if you prefer to use a `SharedArrayBuffer` in place of `ArrayBuffer` (`false` by default). This kind of data structure can be shared between threads.
+- `ArrayBufferType`: the array buffer type used to store data (`ArrayBuffer` by default);
+you may prefer `SharedArrayBuffer` if you want to share the index between threads (multiple `Worker`, `SharedWorker` or `ServiceWorker`).
 
 #### `index.add(minX, minY, maxX, maxY)`
 
