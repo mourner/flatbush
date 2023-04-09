@@ -68,7 +68,7 @@ Alternatively, there's a browser bundle with a `Flatbush` global variable:
 
 ## API
 
-#### `new Flatbush(numItems[, nodeSize, ArrayType, useSharedArrayBuffer])`
+#### `new Flatbush(numItems[, nodeSize, ArrayType, ArrayBufferType])`
 
 Creates a Flatbush index that will hold a given number of items (`numItems`). Additionally accepts:
 
