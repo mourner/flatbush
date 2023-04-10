@@ -1,4 +1,4 @@
-
+/* global SharedArrayBuffer */
 import Flatbush from './index.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -37,6 +37,16 @@ function createIndex() {
 function createSmallIndex(numItems, nodeSize) {
     const index = new Flatbush(numItems, nodeSize);
     for (let i = 0; i < 4 * numItems; i += 4) {
+        index.add(data[i], data[i + 1], data[i + 2], data[i + 3]);
+    }
+    index.finish();
+    return index;
+}
+
+function createIndexSharedArrayBuffer() {
+    const index = new Flatbush(data.length / 4, 16, Float64Array, SharedArrayBuffer);
+
+    for (let i = 0; i < data.length; i += 4) {
         index.add(data[i], data[i + 1], data[i + 2], data[i + 3]);
     }
     index.finish();
@@ -157,6 +167,18 @@ test('returns index of newly-added rectangle', () => {
 
     const expectedSequence = Array.from(Array(count), (v, i) => i);
     assert.deepEqual(ids, expectedSequence);
+});
+
+test('creates an index using SharedArrayBuffer', () => {
+    const index = createIndexSharedArrayBuffer();
+    assert(index.data instanceof global.SharedArrayBuffer);
+});
+
+test('reconstructs an index from shared array buffer', () => {
+    const index = createIndexSharedArrayBuffer();
+    const index2 = Flatbush.from(index.data);
+
+    assert.deepEqual(index, index2);
 });
 
 function compare(a, b) { return a - b; }
