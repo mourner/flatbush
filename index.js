@@ -10,7 +10,7 @@ const VERSION = 3; // serialized format version
 export default class Flatbush {
 
     static from(data) {
-        if (data.constructor.name !== 'ArrayBuffer' && data.constructor.name !== 'SharedArrayBuffer') {
+        if (!data || data.byteLength === undefined || data.buffer) {
             throw new Error('Data must be an instance of ArrayBuffer or SharedArrayBuffer.');
         }
         const [magic, versionAndType] = new Uint8Array(data, 0, 2);
@@ -54,7 +54,7 @@ export default class Flatbush {
             throw new Error(`Unexpected typed array class: ${ArrayType}.`);
         }
 
-        if (data && (data.constructor.name === 'ArrayBuffer' || data.constructor.name === 'SharedArrayBuffer')) {
+        if (data && data.byteLength !== undefined && !data.buffer) {
             this.data = data;
             this._boxes = new this.ArrayType(this.data, 8, numNodes * 4);
             this._indices = new this.IndexArrayType(this.data, 8 + nodesByteSize, numNodes);
