@@ -171,10 +171,10 @@ test('returns index of newly-added rectangle', () => {
 
 test('creates an index using SharedArrayBuffer', () => {
     const index = createIndexSharedArrayBuffer();
-    assert(index.data instanceof global.SharedArrayBuffer);
+    assert(index.data instanceof SharedArrayBuffer);
 });
 
-test('reconstructs an index from shared array buffer', () => {
+test('reconstructs an index from SharedArrayBuffer', () => {
     const index = createIndexSharedArrayBuffer();
     const index2 = Flatbush.from(index.data);
 
