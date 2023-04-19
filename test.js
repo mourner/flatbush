@@ -155,6 +155,12 @@ test('k-nearest-neighbors query accepts filterFn', () => {
     assert.deepEqual(ids.sort(compare), [6, 16, 18, 24, 54, 80].sort(compare));
 });
 
+test('performs a k-nearest-neighbors query with all items', () => {
+    const index = createIndex();
+    const ids = index.neighbors(50, 50);
+    assert.deepEqual(ids.length, data.length >> 2);
+});
+
 test('returns index of newly-added rectangle', () => {
     const count = 5;
     const index = new Flatbush(count);

@@ -247,7 +247,7 @@ export default class Flatbush {
                 }
             }
 
-            nodeIndex = q.pop() >> 1;
+            nodeIndex = q.length ? q.pop() >> 1 : undefined;
         }
 
         q.clear();
