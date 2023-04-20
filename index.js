@@ -1,7 +1,6 @@
 import FlatQueue from 'flatqueue';
 
 const ARRAY_TYPES = [Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array, Int32Array, Uint32Array, Float32Array, Float64Array];
-
 const VERSION = 3; // serialized format version
 
 /** @typedef {Int8ArrayConstructor | Uint8ArrayConstructor | Uint8ClampedArrayConstructor | Int16ArrayConstructor | Uint16ArrayConstructor | Int32ArrayConstructor | Uint32ArrayConstructor | Float32ArrayConstructor | Float64ArrayConstructor} TypedArrayConstructor */
@@ -40,8 +39,8 @@ export default class Flatbush {
      * Create a Flatbush index that will hold a given number of items.
      * @param {number} numItems
      * @param {number} [nodeSize=16] Size of the tree node (16 by default).
-     * @param {TypedArrayConstructor} [ArrayType=Float64ArrayConstructor] The array type used for coordinates storage (`Float64Array` by default).
-     * @param {ArrayBufferConstructor | SharedArrayBufferConstructor} [ArrayBufferType=ArrayBufferConstructor] The array buffer type used to store data (`ArrayBuffer` by default).
+     * @param {TypedArrayConstructor} [ArrayType=Float64Array] The array type used for coordinates storage (`Float64Array` by default).
+     * @param {ArrayBufferConstructor | SharedArrayBufferConstructor} [ArrayBufferType=ArrayBuffer] The array buffer type used to store data (`ArrayBuffer` by default).
      * @param {ArrayBuffer | SharedArrayBuffer} [data] (Only used internally)
      */
     constructor(numItems, nodeSize = 16, ArrayType = Float64Array, ArrayBufferType = ArrayBuffer, data) {
