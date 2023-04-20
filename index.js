@@ -40,10 +40,10 @@ export default class Flatbush {
     /**
      * Create a Flatbush index that will hold a given number of items.
      * @param {number} numItems
-     * @param {number} [nodeSize=16] size of the tree node (16 by default)
-     * @param {TypedArrayConstructor} [ArrayType=Float64ArrayConstructor] the array type used for coordinates storage (`Float64Array` by default)
-     * @param {ArrayBufferConstructor | SharedArrayBufferConstructor} [ArrayBufferType=ArrayBufferConstructor] the array buffer type used to store data (`ArrayBuffer` by default)
-     * @param {ArrayBuffer | SharedArrayBuffer} [data] (only used internally)
+     * @param {number} [nodeSize=16] Size of the tree node (16 by default).
+     * @param {TypedArrayConstructor} [ArrayType=Float64ArrayConstructor] The array type used for coordinates storage (`Float64Array` by default).
+     * @param {ArrayBufferConstructor | SharedArrayBufferConstructor} [ArrayBufferType=ArrayBufferConstructor] The array buffer type used to store data (`ArrayBuffer` by default).
+     * @param {ArrayBuffer | SharedArrayBuffer} [data] (Only used internally)
      */
     constructor(numItems, nodeSize = 16, ArrayType = Float64Array, ArrayBufferType = ArrayBuffer, data) {
         if (numItems === undefined) throw new Error('Missing required argument: numItems.');
@@ -112,7 +112,7 @@ export default class Flatbush {
      * @param {number} minY
      * @param {number} maxX
      * @param {number} maxY
-     * @returns {number} a zero-based, incremental number that represents the newly added rectangle
+     * @returns {number} A zero-based, incremental number that represents the newly added rectangle.
      */
     add(minX, minY, maxX, maxY) {
         const index = this._pos >> 2;
@@ -202,8 +202,8 @@ export default class Flatbush {
      * @param {number} minY
      * @param {number} maxX
      * @param {number} maxY
-     * @param {(index: number) => boolean} [filterFn] an optional function for filtering the results
-     * @returns {number[]} an array of indices of items intersecting or touching the given bounding box
+     * @param {(index: number) => boolean} [filterFn] An optional function for filtering the results.
+     * @returns {number[]} An array of indices of items intersecting or touching the given bounding box.
      */
     search(minX, minY, maxX, maxY, filterFn) {
         if (this._pos !== this._boxes.length) {
@@ -249,8 +249,8 @@ export default class Flatbush {
      * @param {number} y
      * @param {number} [maxResults=Infinity]
      * @param {number} [maxDistance=Infinity]
-     * @param {(index: number) => boolean} [filterFn] an optional function for filtering the results
-     * @returns {number[]} an array of indices of items found
+     * @param {(index: number) => boolean} [filterFn] An optional function for filtering the results.
+     * @returns {number[]} An array of indices of items found.
      */
     neighbors(x, y, maxResults = Infinity, maxDistance = Infinity, filterFn) {
         if (this._pos !== this._boxes.length) {
