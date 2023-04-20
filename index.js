@@ -5,7 +5,6 @@ const ARRAY_TYPES = [Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint1
 const VERSION = 3; // serialized format version
 
 /** @typedef {Int8ArrayConstructor | Uint8ArrayConstructor | Uint8ClampedArrayConstructor | Int16ArrayConstructor | Uint16ArrayConstructor | Int32ArrayConstructor | Uint32ArrayConstructor | Float32ArrayConstructor | Float64ArrayConstructor} TypedArrayConstructor */
-/** @typedef {Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array} TypedArray */
 
 export default class Flatbush {
 
@@ -63,7 +62,7 @@ export default class Flatbush {
             this._levelBounds.push(numNodes * 4);
         } while (n !== 1);
 
-        this.ArrayType = ArrayType || Float64Array;
+        this.ArrayType = ArrayType;
         this.IndexArrayType = numNodes < 16384 ? Uint16Array : Uint32Array;
 
         const arrayTypeIndex = ARRAY_TYPES.indexOf(this.ArrayType);
@@ -76,7 +75,6 @@ export default class Flatbush {
         // @ts-expect-error duck typing array buffers
         if (data && data.byteLength !== undefined && !data.buffer) {
             this.data = data;
-            /** @type TypedArray */
             this._boxes = new this.ArrayType(this.data, 8, numNodes * 4);
             this._indices = new this.IndexArrayType(this.data, 8 + nodesByteSize, numNodes);
 
@@ -102,7 +100,7 @@ export default class Flatbush {
         }
 
         // a priority queue for k-nearest-neighbors queries
-        /** @type {FlatQueue<number>} */
+        /** @type FlatQueue<number> */
         this._queue = new FlatQueue();
     }
 
@@ -342,7 +340,7 @@ function upperBound(value, arr) {
 /**
  * Custom quicksort that partially sorts bbox data alongside the hilbert values.
  * @param {Uint32Array} values
- * @param {TypedArray} boxes
+ * @param {InstanceType<TypedArrayConstructor>} boxes
  * @param {Uint16Array | Uint32Array} indices
  * @param {number} left
  * @param {number} right
@@ -369,7 +367,7 @@ function sort(values, boxes, indices, left, right, nodeSize) {
 /**
  * Swap two values and two corresponding boxes.
  * @param {Uint32Array} values
- * @param {TypedArray} boxes
+ * @param {InstanceType<TypedArrayConstructor>} boxes
  * @param {Uint16Array | Uint32Array} indices
  * @param {number} i
  * @param {number} j
