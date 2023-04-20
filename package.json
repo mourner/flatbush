@@ -9,6 +9,7 @@
   "module": "index.js",
   "exports": "./index.js",
   "sideEffects": false,
+  "types": "index.d.ts",
   "scripts": {
     "pretest": "eslint index.js test.js bench.js",
     "test": "tsc && node test.js",

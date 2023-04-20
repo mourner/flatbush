@@ -10,8 +10,9 @@ const VERSION = 3; // serialized format version
 export default class Flatbush {
 
     /**
-     * Recreates a Flatbush index from raw `ArrayBuffer` or `SharedArrayBuffer` data.
+     * Recreate a Flatbush index from raw `ArrayBuffer` or `SharedArrayBuffer` data.
      * @param {ArrayBuffer | SharedArrayBuffer} data
+     * @returns {Flatbush} index
      */
     static from(data) {
         // @ts-expect-error duck typing array buffers
@@ -37,7 +38,7 @@ export default class Flatbush {
     }
 
     /**
-     * Creates a Flatbush index that will hold a given number of items.
+     * Create a Flatbush index that will hold a given number of items.
      * @param {number} numItems
      * @param {number} [nodeSize=16] size of the tree node (16 by default)
      * @param {TypedArrayConstructor} [ArrayType=Float64ArrayConstructor] the array type used for coordinates storage (`Float64Array` by default)
@@ -106,7 +107,7 @@ export default class Flatbush {
     }
 
     /**
-     * Adds a given rectangle to the index.
+     * Add a given rectangle to the index.
      * @param {number} minX
      * @param {number} minY
      * @param {number} maxX
@@ -130,9 +131,7 @@ export default class Flatbush {
         return index;
     }
 
-    /**
-     * Performs indexing of the added rectangles.
-     */
+    /** Perform indexing of the added rectangles. */
     finish() {
         if (this._pos >> 2 !== this.numItems) {
             throw new Error(`Added ${this._pos >> 2} items when expected ${this.numItems}.`);
@@ -198,7 +197,7 @@ export default class Flatbush {
     }
 
     /**
-     * Searches the index by a bounding box.
+     * Search the index by a bounding box.
      * @param {number} minX
      * @param {number} minY
      * @param {number} maxX
@@ -245,12 +244,13 @@ export default class Flatbush {
     }
 
     /**
-     * Searches items in order of distance from the given point.
+     * Search items in order of distance from the given point.
      * @param {number} x
      * @param {number} y
      * @param {number} [maxResults=Infinity]
      * @param {number} [maxDistance=Infinity]
      * @param {(index: number) => boolean} [filterFn] an optional function for filtering the results
+     * @returns {number[]} an array of indices of items found
      */
     neighbors(x, y, maxResults = Infinity, maxDistance = Infinity, filterFn) {
         if (this._pos !== this._boxes.length) {
@@ -311,10 +311,10 @@ export default class Flatbush {
 }
 
 /**
+ * 1D distance from a value to a range.
  * @param {number} k
  * @param {number} min
  * @param {number} max
- * @returns {number}
  */
 function axisDist(k, min, max) {
     return k < min ? min - k : k <= max ? 0 : k - max;
@@ -324,7 +324,6 @@ function axisDist(k, min, max) {
  * Binary search for the first value in the array bigger than the given.
  * @param {number} value
  * @param {number[]} arr
- * @returns {number}
  */
 function upperBound(value, arr) {
     let i = 0;
