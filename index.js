@@ -271,6 +271,7 @@ export default class Flatbush {
                 const dx = axisDist(x, this._boxes[pos], this._boxes[pos + 2]);
                 const dy = axisDist(y, this._boxes[pos + 1], this._boxes[pos + 3]);
                 const dist = dx * dx + dy * dy;
+                if (dist > maxDistSquared) continue;
 
                 if (nodeIndex >= this.numItems * 4) {
                     q.push(index << 1, dist); // node (use even id)
