@@ -26,7 +26,10 @@
     "url": "git+https://github.com/mourner/flatbush.git"
   },
   "eslintConfig": {
-    "extends": "mourner"
+    "extends": "mourner",
+    "rules": {
+      "no-labels": "off"
+    }
   },
   "keywords": [
     "geometry",
@@ -36,9 +39,6 @@
     "rectangle",
     "search"
   ],
-  "engines": {
-    "node": ">= 12.17.0"
-  },
   "dependencies": {
     "flatqueue": "^2.0.3"
   },

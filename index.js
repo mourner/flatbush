@@ -260,7 +260,7 @@ export default class Flatbush {
         const results = [];
         const maxDistSquared = maxDistance * maxDistance;
 
-        while (nodeIndex !== undefined) {
+        outer: while (nodeIndex !== undefined) {
             // find the end index of the node
             const end = Math.min(nodeIndex + this.nodeSize * 4, upperBound(nodeIndex, this._levelBounds));
 
@@ -286,17 +286,10 @@ export default class Flatbush {
             while (q.length && (q.peek() & 1)) {
                 const dist = q.peekValue();
                 // @ts-expect-error
-                if (dist > maxDistSquared) {
-                    q.clear();
-                    return results;
-                }
+                if (dist > maxDistSquared) break outer;
                 // @ts-expect-error
                 results.push(q.pop() >> 1);
-
-                if (results.length === maxResults) {
-                    q.clear();
-                    return results;
-                }
+                if (results.length === maxResults) break outer;
             }
 
             // @ts-expect-error
