@@ -2,3 +2,4 @@ flatbush.js
 yarn.lock
 pnpm-lock.yaml
 node_modules
+index.d.ts

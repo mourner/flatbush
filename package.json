@@ -9,14 +9,16 @@
   "module": "index.js",
   "exports": "./index.js",
   "sideEffects": false,
+  "types": "index.d.ts",
   "scripts": {
     "pretest": "eslint index.js test.js bench.js",
-    "test": "node --test --test-reporter spec test.js",
+    "test": "tsc && node test.js",
     "build": "rollup index.js -o flatbush.js -n Flatbush -f umd -p node-resolve",
     "prepublishOnly": "npm run build"
   },
   "files": [
     "index.js",
+    "index.d.ts",
     "flatbush.js"
   ],
   "repository": {
@@ -46,6 +48,7 @@
     "eslint-config-mourner": "^3.0.0",
     "rbush": "^3.0.1",
     "rbush-knn": "^3.0.1",
-    "rollup": "^3.20.2"
+    "rollup": "^3.20.2",
+    "typescript": "^5.0.4"
   }
 }
