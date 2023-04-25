@@ -1,39 +1,63 @@
-
 import FlatQueue from 'flatqueue';
 
-const ARRAY_TYPES = [
-    Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array,
-    Int32Array, Uint32Array, Float32Array, Float64Array
-];
-
+const ARRAY_TYPES = [Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array, Int32Array, Uint32Array, Float32Array, Float64Array];
 const VERSION = 3; // serialized format version
+
+/** @typedef {Int8ArrayConstructor | Uint8ArrayConstructor | Uint8ClampedArrayConstructor | Int16ArrayConstructor | Uint16ArrayConstructor | Int32ArrayConstructor | Uint32ArrayConstructor | Float32ArrayConstructor | Float64ArrayConstructor} TypedArrayConstructor */
 
 export default class Flatbush {
 
+    /**
+     * Recreate a Flatbush index from raw `ArrayBuffer` or `SharedArrayBuffer` data.
+     * @param {ArrayBuffer | SharedArrayBuffer} data
+     * @returns {Flatbush} index
+     */
     static from(data) {
-        if (!(data instanceof ArrayBuffer)) {
-            throw new Error('Data must be an instance of ArrayBuffer.');
+        // @ts-expect-error duck typing array buffers
+        if (!data || data.byteLength === undefined || data.buffer) {
+            throw new Error('Data must be an instance of ArrayBuffer or SharedArrayBuffer.');
         }
         const [magic, versionAndType] = new Uint8Array(data, 0, 2);
         if (magic !== 0xfb) {
             throw new Error('Data does not appear to be in a Flatbush format.');
         }
-        if (versionAndType >> 4 !== VERSION) {
-            throw new Error(`Got v${versionAndType >> 4} data when expected v${VERSION}.`);
+        const version = versionAndType >> 4;
+        if (version !== VERSION) {
+            throw new Error(`Got v${version} data when expected v${VERSION}.`);
+        }
+        const ArrayType = ARRAY_TYPES[versionAndType & 0x0f];
+        if (!ArrayType) {
+            throw new Error('Unrecognized array type.');
         }
         const [nodeSize] = new Uint16Array(data, 2, 1);
         const [numItems] = new Uint32Array(data, 4, 1);
 
-        return new Flatbush(numItems, nodeSize, ARRAY_TYPES[versionAndType & 0x0f], data);
+        return new Flatbush(numItems, nodeSize, ArrayType, undefined, data);
     }
 
-    constructor(numItems, nodeSize = 16, ArrayType = Float64Array, data) {
-        this.init(numItems, nodeSize, ArrayType, data);
+    /**
+     * Create a Flatbush index that will hold a given number of items.
+     * @param {number} numItems
+     * @param {number} [nodeSize=16] Size of the tree node (16 by default).
+     * @param {TypedArrayConstructor} [ArrayType=Float64Array] The array type used for coordinates storage (`Float64Array` by default).
+     * @param {ArrayBufferConstructor | SharedArrayBufferConstructor} [ArrayBufferType=ArrayBuffer] The array buffer type used to store data (`ArrayBuffer` by default).
+     * @param {ArrayBuffer | SharedArrayBuffer} [data] (Only used internally)
+     */
+    constructor(numItems, nodeSize = 16, ArrayType = Float64Array, ArrayBufferType = ArrayBuffer, data) {
+        this.init(numItems, nodeSize, ArrayType, ArrayBufferType, data);
     }
 
-    init(numItems, nodeSize = 16, ArrayType = Float64Array, data) {
+    /**
+     * Create a Flatbush index that will hold a given number of items.
+     * @param {number} numItems
+     * @param {number} [nodeSize=16] Size of the tree node (16 by default).
+     * @param {TypedArrayConstructor} [ArrayType=Float64Array] The array type used for coordinates storage (`Float64Array` by default).
+     * @param {ArrayBufferConstructor | SharedArrayBufferConstructor} [ArrayBufferType=ArrayBuffer] The array buffer type used to store data (`ArrayBuffer` by default).
+     * @param {ArrayBuffer | SharedArrayBuffer} [data] (Only used internally)
+     */
+    init(numItems, nodeSize = 16, ArrayType = Float64Array, ArrayBufferType = ArrayBuffer, data) {
         if (numItems === undefined) throw new Error('Missing required argument: numItems.');
-        if (isNaN(numItems) || numItems <= 0) throw new Error(`Unpexpected numItems value: ${numItems}.`);
+        if (isNaN(numItems) || numItems <= 0) throw new Error(`Unexpected numItems value: ${numItems}.`);
 
         this.numItems = +numItems;
         this.nodeSize = Math.min(Math.max(+nodeSize, 2), 65535);
@@ -49,7 +73,7 @@ export default class Flatbush {
             this._levelBounds.push(numNodes * 4);
         } while (n !== 1);
 
-        this.ArrayType = ArrayType || Float64Array;
+        this.ArrayType = ArrayType;
         this.IndexArrayType = numNodes < 16384 ? Uint16Array : Uint32Array;
 
         const arrayTypeIndex = ARRAY_TYPES.indexOf(this.ArrayType);
@@ -59,7 +83,8 @@ export default class Flatbush {
             throw new Error(`Unexpected typed array class: ${ArrayType}.`);
         }
 
-        if (data && (data instanceof ArrayBuffer)) {
+        // @ts-expect-error duck typing array buffers
+        if (data && data.byteLength !== undefined && !data.buffer) {
             this.data = data;
             this._boxes = new this.ArrayType(this.data, 8, numNodes * 4);
             this._indices = new this.IndexArrayType(this.data, 8 + nodesByteSize, numNodes);
@@ -71,7 +96,7 @@ export default class Flatbush {
             this.maxY = this._boxes[this._pos - 1];
 
         } else {
-            this.data = new ArrayBuffer(8 + nodesByteSize + numNodes * this.IndexArrayType.BYTES_PER_ELEMENT);
+            this.data = new ArrayBufferType(8 + nodesByteSize + numNodes * this.IndexArrayType.BYTES_PER_ELEMENT);
             this._boxes = new this.ArrayType(this.data, 8, numNodes * 4);
             this._indices = new this.IndexArrayType(this.data, 8 + nodesByteSize, numNodes);
             this._pos = 0;
@@ -84,8 +109,41 @@ export default class Flatbush {
             new Uint16Array(this.data, 2, 1)[0] = nodeSize;
             new Uint32Array(this.data, 4, 1)[0] = numItems;
         }
+
+        // a priority queue for k-nearest-neighbors queries
+        /** @type FlatQueue<number> */
+        this._queue = new FlatQueue();
     }
 
+    /**
+     * Trim index to number of added rectangles.
+     */
+    trim() {
+        const {_boxes, _indices, _pos, minX, minY, maxX, maxY, nodeSize, ArrayType} = this;
+        const numAdded = _pos >> 2;
+
+        if (numAdded < this.numItems) {
+            this.init(numAdded, nodeSize, ArrayType, this.data.constructor);
+
+            this._pos = _pos;
+            this.minX = minX;
+            this.minY = minY;
+            this.maxX = maxX;
+            this.maxY = maxY;
+
+            this._boxes.set(_boxes.slice(0, this._boxes.length));
+            this._indices.set(_indices.slice(0, this._indices.length));
+        }
+    }
+
+    /**
+     * Add a given rectangle to the index.
+     * @param {number} minX
+     * @param {number} minY
+     * @param {number} maxX
+     * @param {number} maxY
+     * @returns {number} A zero-based, incremental number that represents the newly added rectangle.
+     */
     add(minX, minY, maxX, maxY) {
         const index = this._pos >> 2;
         const boxes = this._boxes;
@@ -103,35 +161,20 @@ export default class Flatbush {
         return index;
     }
 
-    trim() {
-        const {_boxes, _indices, _pos, minX, minY, maxX, maxY, nodeSize, ArrayType} = this;
-        const numItems = _pos >> 2;
-
-        this.init(numItems, nodeSize, ArrayType);
-
-        this._boxes.set(_boxes.slice(0, this._boxes.length));
-        this._indices.set(_indices.slice(0, this._indices.length));
-
-        this._pos = _pos;
-        this.minX = minX;
-        this.minY = minY;
-        this.maxX = maxX;
-        this.maxY = maxY;
-    }
-
-    finish() {
+    /**
+     * Perform indexing of the added rectangles.
+     * @param {boolean} trim Whether to auto-trim index when number of added rectangles is less than numItems (`false` by default).
+    */
+    finish(trim = false) {
         const numAdded = this._pos >> 2;
 
-        if (numAdded < this.numItems) {
+        if (numAdded < this.numItems && trim) {
             this.trim();
-
-        } else if (numAdded > this.numItems) {
-            throw new Error(`Added ${this._pos >> 2} items when expected ${this.numItems}.`);
+        } else if (numAdded !== this.numItems) {
+            throw new Error(`Added ${numAdded} items when expected ${this.numItems}.`);
         }
-        const boxes = this._boxes;
 
-        // a priority queue for k-nearest-neighbors queries
-        this._queue = new FlatQueue();
+        const boxes = this._boxes;
 
         if (this.numItems <= this.nodeSize) {
             // only one node, skip sorting and just fill the root box
@@ -191,11 +234,21 @@ export default class Flatbush {
         }
     }
 
+    /**
+     * Search the index by a bounding box.
+     * @param {number} minX
+     * @param {number} minY
+     * @param {number} maxX
+     * @param {number} maxY
+     * @param {(index: number) => boolean} [filterFn] An optional function for filtering the results.
+     * @returns {number[]} An array of indices of items intersecting or touching the given bounding box.
+     */
     search(minX, minY, maxX, maxY, filterFn) {
         if (this._pos !== this._boxes.length) {
             throw new Error('Data not yet indexed - call index.finish().');
         }
 
+        /** @type number | undefined */
         let nodeIndex = this._boxes.length - 4;
         const queue = [];
         const results = [];
@@ -205,7 +258,7 @@ export default class Flatbush {
             const end = Math.min(nodeIndex + this.nodeSize * 4, upperBound(nodeIndex, this._levelBounds));
 
             // search through child nodes
-            for (let pos = nodeIndex; pos < end; pos += 4) {
+            for (let /** @type number */ pos = nodeIndex; pos < end; pos += 4) {
                 // check if node bbox intersects with query bbox
                 if (maxX < this._boxes[pos]) continue; // maxX < nodeMinX
                 if (maxY < this._boxes[pos + 1]) continue; // maxY < nodeMinY
@@ -228,17 +281,27 @@ export default class Flatbush {
         return results;
     }
 
+    /**
+     * Search items in order of distance from the given point.
+     * @param {number} x
+     * @param {number} y
+     * @param {number} [maxResults=Infinity]
+     * @param {number} [maxDistance=Infinity]
+     * @param {(index: number) => boolean} [filterFn] An optional function for filtering the results.
+     * @returns {number[]} An array of indices of items found.
+     */
     neighbors(x, y, maxResults = Infinity, maxDistance = Infinity, filterFn) {
         if (this._pos !== this._boxes.length) {
             throw new Error('Data not yet indexed - call index.finish().');
         }
 
+        /** @type number | undefined */
         let nodeIndex = this._boxes.length - 4;
         const q = this._queue;
         const results = [];
         const maxDistSquared = maxDistance * maxDistance;
 
-        while (nodeIndex !== undefined) {
+        outer: while (nodeIndex !== undefined) {
             // find the end index of the node
             const end = Math.min(nodeIndex + this.nodeSize * 4, upperBound(nodeIndex, this._levelBounds));
 
@@ -249,6 +312,7 @@ export default class Flatbush {
                 const dx = axisDist(x, this._boxes[pos], this._boxes[pos + 2]);
                 const dy = axisDist(y, this._boxes[pos + 1], this._boxes[pos + 3]);
                 const dist = dx * dx + dy * dy;
+                if (dist > maxDistSquared) continue;
 
                 if (nodeIndex >= this.numItems * 4) {
                     q.push(index << 1, dist); // node (use even id)
@@ -259,21 +323,18 @@ export default class Flatbush {
             }
 
             // pop items from the queue
+            // @ts-expect-error q.length check eliminates undefined values
             while (q.length && (q.peek() & 1)) {
                 const dist = q.peekValue();
-                if (dist > maxDistSquared) {
-                    q.clear();
-                    return results;
-                }
+                // @ts-expect-error
+                if (dist > maxDistSquared) break outer;
+                // @ts-expect-error
                 results.push(q.pop() >> 1);
-
-                if (results.length === maxResults) {
-                    q.clear();
-                    return results;
-                }
+                if (results.length === maxResults) break outer;
             }
 
-            nodeIndex = q.pop() >> 1;
+            // @ts-expect-error
+            nodeIndex = q.length ? q.pop() >> 1 : undefined;
         }
 
         q.clear();
@@ -281,11 +342,21 @@ export default class Flatbush {
     }
 }
 
+/**
+ * 1D distance from a value to a range.
+ * @param {number} k
+ * @param {number} min
+ * @param {number} max
+ */
 function axisDist(k, min, max) {
     return k < min ? min - k : k <= max ? 0 : k - max;
 }
 
-// binary search for the first value in the array bigger than the given
+/**
+ * Binary search for the first value in the array bigger than the given.
+ * @param {number} value
+ * @param {number[]} arr
+ */
 function upperBound(value, arr) {
     let i = 0;
     let j = arr.length - 1;
@@ -300,7 +371,15 @@ function upperBound(value, arr) {
     return arr[i];
 }
 
-// custom quicksort that partially sorts bbox data alongside the hilbert values
+/**
+ * Custom quicksort that partially sorts bbox data alongside the hilbert values.
+ * @param {Uint32Array} values
+ * @param {InstanceType<TypedArrayConstructor>} boxes
+ * @param {Uint16Array | Uint32Array} indices
+ * @param {number} left
+ * @param {number} right
+ * @param {number} nodeSize
+ */
 function sort(values, boxes, indices, left, right, nodeSize) {
     if (Math.floor(left / nodeSize) >= Math.floor(right / nodeSize)) return;
 
@@ -319,7 +398,14 @@ function sort(values, boxes, indices, left, right, nodeSize) {
     sort(values, boxes, indices, j + 1, right, nodeSize);
 }
 
-// swap two values and two corresponding boxes
+/**
+ * Swap two values and two corresponding boxes.
+ * @param {Uint32Array} values
+ * @param {InstanceType<TypedArrayConstructor>} boxes
+ * @param {Uint16Array | Uint32Array} indices
+ * @param {number} i
+ * @param {number} j
+ */
 function swap(values, boxes, indices, i, j) {
     const temp = values[i];
     values[i] = values[j];
@@ -346,8 +432,12 @@ function swap(values, boxes, indices, i, j) {
     indices[j] = e;
 }
 
-// Fast Hilbert curve algorithm by http://threadlocalmutex.com/
-// Ported from C++ https://github.com/rawrunprotected/hilbert_curves (public domain)
+/**
+ * Fast Hilbert curve algorithm by http://threadlocalmutex.com/
+ * Ported from C++ https://github.com/rawrunprotected/hilbert_curves (public domain)
+ * @param {number} x
+ * @param {number} y
+ */
 function hilbert(x, y) {
     let a = x ^ y;
     let b = 0xFFFF ^ a;
