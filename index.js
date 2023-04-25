@@ -44,6 +44,18 @@ export default class Flatbush {
      * @param {ArrayBuffer | SharedArrayBuffer} [data] (Only used internally)
      */
     constructor(numItems, nodeSize = 16, ArrayType = Float64Array, ArrayBufferType = ArrayBuffer, data) {
+        this.init(numItems, nodeSize, ArrayType, ArrayBufferType, data);
+    }
+
+    /**
+     * Create a Flatbush index that will hold a given number of items.
+     * @param {number} numItems
+     * @param {number} [nodeSize=16] Size of the tree node (16 by default).
+     * @param {TypedArrayConstructor} [ArrayType=Float64Array] The array type used for coordinates storage (`Float64Array` by default).
+     * @param {ArrayBufferConstructor | SharedArrayBufferConstructor} [ArrayBufferType=ArrayBuffer] The array buffer type used to store data (`ArrayBuffer` by default).
+     * @param {ArrayBuffer | SharedArrayBuffer} [data] (Only used internally)
+     */
+    init(numItems, nodeSize = 16, ArrayType = Float64Array, ArrayBufferType = ArrayBuffer, data) {
         if (numItems === undefined) throw new Error('Missing required argument: numItems.');
         if (isNaN(numItems) || numItems <= 0) throw new Error(`Unexpected numItems value: ${numItems}.`);
 
@@ -104,6 +116,27 @@ export default class Flatbush {
     }
 
     /**
+     * Trim index to number of added rectangles.
+     */
+    trim() {
+        const {_boxes, _indices, _pos, minX, minY, maxX, maxY, nodeSize, ArrayType} = this;
+        const numAdded = _pos >> 2;
+
+        if (numAdded < this.numItems) {
+            this.init(numAdded, nodeSize, ArrayType, this.data.constructor);
+
+            this._pos = _pos;
+            this.minX = minX;
+            this.minY = minY;
+            this.maxX = maxX;
+            this.maxY = maxY;
+
+            this._boxes.set(_boxes.slice(0, this._boxes.length));
+            this._indices.set(_indices.slice(0, this._indices.length));
+        }
+    }
+
+    /**
      * Add a given rectangle to the index.
      * @param {number} minX
      * @param {number} minY
@@ -128,11 +161,19 @@ export default class Flatbush {
         return index;
     }
 
-    /** Perform indexing of the added rectangles. */
-    finish() {
-        if (this._pos >> 2 !== this.numItems) {
-            throw new Error(`Added ${this._pos >> 2} items when expected ${this.numItems}.`);
+    /**
+     * Perform indexing of the added rectangles.
+     * @param {boolean} trim Whether to auto-trim index when number of added rectangles is less than numItems (`false` by default).
+    */
+    finish(trim = false) {
+        const numAdded = this._pos >> 2;
+
+        if (numAdded < this.numItems && trim) {
+            this.trim();
+        } else if (numAdded !== this.numItems) {
+            throw new Error(`Added ${numAdded} items when expected ${this.numItems}.`);
         }
+
         const boxes = this._boxes;
 
         if (this.numItems <= this.nodeSize) {
