@@ -129,6 +129,12 @@ Very useful for transferring or sharing indices between threads or storing them 
 - `ArrayType`: array type used for internal coordinates storage.
 - `IndexArrayType`: array type used for internal item indices storage.
 
+## Related projects
+
+- [GeoFlatbush](https://github.com/mourner/geoflatbush) Works like flatbush while compensating for spherical distortion (lat/long)
+- [KDBush](https://github.com/mourner/kdbush) If you only need to operate on 2d points, use KDBush.  Half the memory usage and greater performance
+- [GeoKDBUsh](https://github.com/mourner/geokdbush) Similar to KDBush, but compensates for spheical distortion (lat/long) coordinates.
+
 ## Performance
 
 Running `node bench.js` with Node v14:
