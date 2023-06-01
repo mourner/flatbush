@@ -14,7 +14,7 @@
     "pretest": "eslint index.js test.js bench.js",
     "test": "tsc && node test.js",
     "build": "rollup index.js -o flatbush.js -n Flatbush -f umd -p node-resolve",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "tsc && npm run build"
   },
   "files": [
     "index.js",
@@ -43,12 +43,12 @@
     "flatqueue": "^2.0.3"
   },
   "devDependencies": {
-    "@rollup/plugin-node-resolve": "^15.0.2",
-    "eslint": "^8.38.0",
+    "@rollup/plugin-node-resolve": "^15.1.0",
+    "eslint": "^8.41.0",
     "eslint-config-mourner": "^3.0.0",
     "rbush": "^3.0.1",
     "rbush-knn": "^3.0.1",
-    "rollup": "^3.20.2",
+    "rollup": "^3.23.0",
     "typescript": "^5.0.4"
   }
 }
