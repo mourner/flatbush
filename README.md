@@ -151,3 +151,4 @@ index 1,000,000 rectangles | 273ms | 1143ms
 - [bmharper/flatbush-python](https://github.com/bmharper/flatbush-python) (Python port)
 - [FlatGeobuf](https://github.com/flatgeobuf/flatgeobuf) (a geospatial format inspired by Flatbush)
 - [IMQS/flatbush](https://github.com/IMQS/flatbush) (C++ port, no longer maintained)
+- [msfstef/flatbush-dart](https://github.com/msfstef/flatbush-dart) (Dart port)
