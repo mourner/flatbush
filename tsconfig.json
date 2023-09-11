@@ -6,6 +6,7 @@
 		"emitDeclarationOnly": true,
 		"declaration": true,
 		"target": "es2017",
+		"module": "nodenext",
 		"moduleResolution": "nodenext"
 	},
 	"files": [
