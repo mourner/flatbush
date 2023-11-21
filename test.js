@@ -124,6 +124,14 @@ test('throws an error if added less items than the index size', () => {
     });
 });
 
+test('does not throw an error if added less items than the index size and trim = true', () => {
+    assert.doesNotThrow(() => {
+        const index = new Flatbush(data.length / 4);
+        index.add(data[0], data[1], data[2], data[3]);
+        index.finish(true);
+    });
+});
+
 test('throws an error if searching before indexing', () => {
     assert.throws(() => {
         const index = new Flatbush(data.length / 4);
