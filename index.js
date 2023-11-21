@@ -5,6 +5,8 @@ const VERSION = 3; // serialized format version
 
 /** @typedef {Int8ArrayConstructor | Uint8ArrayConstructor | Uint8ClampedArrayConstructor | Int16ArrayConstructor | Uint16ArrayConstructor | Int32ArrayConstructor | Uint32ArrayConstructor | Float32ArrayConstructor | Float64ArrayConstructor} TypedArrayConstructor */
 
+const BOX_SIZE = 4;
+
 export default class Flatbush {
 
     /**
@@ -54,18 +56,18 @@ export default class Flatbush {
         // and the index of each tree level (used in search later)
         let n = numItems;
         let numNodes = n;
-        this._levelBounds = [n * 4];
+        this._levelBounds = [n * BOX_SIZE];
         do {
             n = Math.ceil(n / this.nodeSize);
             numNodes += n;
-            this._levelBounds.push(numNodes * 4);
+            this._levelBounds.push(numNodes * BOX_SIZE);
         } while (n !== 1);
 
         this.ArrayType = ArrayType;
         this.IndexArrayType = numNodes < 16384 ? Uint16Array : Uint32Array;
 
         const arrayTypeIndex = ARRAY_TYPES.indexOf(this.ArrayType);
-        const nodesByteSize = numNodes * 4 * this.ArrayType.BYTES_PER_ELEMENT;
+        const nodesByteSize = numNodes * BOX_SIZE * this.ArrayType.BYTES_PER_ELEMENT;
 
         if (arrayTypeIndex < 0) {
             throw new Error(`Unexpected typed array class: ${ArrayType}.`);
@@ -74,10 +76,10 @@ export default class Flatbush {
         // @ts-expect-error duck typing array buffers
         if (data && data.byteLength !== undefined && !data.buffer) {
             this.data = data;
-            this._boxes = new this.ArrayType(this.data, 8, numNodes * 4);
+            this._boxes = new this.ArrayType(this.data, 8, numNodes * BOX_SIZE);
             this._indices = new this.IndexArrayType(this.data, 8 + nodesByteSize, numNodes);
 
-            this._pos = numNodes * 4;
+            this._pos = numNodes * BOX_SIZE;
             this.minX = this._boxes[this._pos - 4];
             this.minY = this._boxes[this._pos - 3];
             this.maxX = this._boxes[this._pos - 2];
@@ -85,7 +87,7 @@ export default class Flatbush {
 
         } else {
             this.data = new ArrayBufferType(8 + nodesByteSize + numNodes * this.IndexArrayType.BYTES_PER_ELEMENT);
-            this._boxes = new this.ArrayType(this.data, 8, numNodes * 4);
+            this._boxes = new this.ArrayType(this.data, 8, numNodes * BOX_SIZE);
             this._indices = new this.IndexArrayType(this.data, 8 + nodesByteSize, numNodes);
             this._pos = 0;
             this.minX = Infinity;
@@ -208,16 +210,16 @@ export default class Flatbush {
         }
 
         /** @type number | undefined */
-        let nodeIndex = this._boxes.length - 4;
+        let nodeIndex = this._boxes.length - BOX_SIZE;
         const queue = [];
         const results = [];
 
         while (nodeIndex !== undefined) {
             // find the end index of the node
-            const end = Math.min(nodeIndex + this.nodeSize * 4, upperBound(nodeIndex, this._levelBounds));
+            const end = Math.min(nodeIndex + this.nodeSize * BOX_SIZE, upperBound(nodeIndex, this._levelBounds));
 
             // search through child nodes
-            for (let /** @type number */ pos = nodeIndex; pos < end; pos += 4) {
+            for (let /** @type number */ pos = nodeIndex; pos < end; pos += BOX_SIZE) {
                 // check if node bbox intersects with query bbox
                 if (maxX < this._boxes[pos]) continue; // maxX < nodeMinX
                 if (maxY < this._boxes[pos + 1]) continue; // maxY < nodeMinY
@@ -226,7 +228,7 @@ export default class Flatbush {
 
                 const index = this._indices[pos >> 2] | 0;
 
-                if (nodeIndex >= this.numItems * 4) {
+                if (nodeIndex >= this.numItems * BOX_SIZE) {
                     queue.push(index); // node; add it to the search queue
 
                 } else if (filterFn === undefined || filterFn(index)) {
@@ -255,17 +257,17 @@ export default class Flatbush {
         }
 
         /** @type number | undefined */
-        let nodeIndex = this._boxes.length - 4;
+        let nodeIndex = this._boxes.length - BOX_SIZE;
         const q = this._queue;
         const results = [];
         const maxDistSquared = maxDistance * maxDistance;
 
         outer: while (nodeIndex !== undefined) {
             // find the end index of the node
-            const end = Math.min(nodeIndex + this.nodeSize * 4, upperBound(nodeIndex, this._levelBounds));
+            const end = Math.min(nodeIndex + this.nodeSize * BOX_SIZE, upperBound(nodeIndex, this._levelBounds));
 
             // add child nodes to the queue
-            for (let pos = nodeIndex; pos < end; pos += 4) {
+            for (let pos = nodeIndex; pos < end; pos += BOX_SIZE) {
                 const index = this._indices[pos >> 2] | 0;
 
                 const dx = axisDist(x, this._boxes[pos], this._boxes[pos + 2]);
@@ -273,7 +275,7 @@ export default class Flatbush {
                 const dist = dx * dx + dy * dy;
                 if (dist > maxDistSquared) continue;
 
-                if (nodeIndex >= this.numItems * 4) {
+                if (nodeIndex >= this.numItems * BOX_SIZE) {
                     q.push(index << 1, dist); // node (use even id)
 
                 } else if (filterFn === undefined || filterFn(index)) {
@@ -370,8 +372,8 @@ function swap(values, boxes, indices, i, j) {
     values[i] = values[j];
     values[j] = temp;
 
-    const k = 4 * i;
-    const m = 4 * j;
+    const k = BOX_SIZE * i;
+    const m = BOX_SIZE * j;
 
     const a = boxes[k];
     const b = boxes[k + 1];
