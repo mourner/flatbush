@@ -9,21 +9,19 @@ export default class Flatbush {
 
     /**
      * Recreate a Flatbush index from raw `ArrayBuffer` or `SharedArrayBuffer` data.
-     * @param {Uint8Array | ArrayBuffer | SharedArrayBuffer} data
+     * @param {ArrayBuffer | SharedArrayBuffer} data
+     * @param {number} byteOffset byte offset to the start of the Flatbush buffer in the referenced ArrayBuffer.
      * @returns {Flatbush} index
      */
-    static from(data) {
-        let byteOffset = 0;
-        if (data instanceof Uint8Array) {
-            byteOffset = data.byteOffset;
-            if (byteOffset % 8 !== 0) {
-                throw new Error('Uint8Array offset must be 8-byte aligned.');
-            }
-            data = data.buffer;
-            // @ts-expect-error duck typing array buffers
-        } else if (!data || data.byteLength === undefined || data.buffer) {
+    static from(data, byteOffset = 0) {
+        if (byteOffset % 8 !== 0) {
+            throw new Error('Uint8Array offset must be 8-byte aligned.');
+        }
+
+        // @ts-expect-error duck typing array buffers
+        if (!data || data.byteLength === undefined || data.buffer) {
             throw new Error(
-                'Data must be an instance of Uint8Array, ArrayBuffer, or SharedArrayBuffer.'
+                'Data must be an instance of ArrayBuffer, or SharedArrayBuffer.'
             );
         }
 
@@ -42,14 +40,7 @@ export default class Flatbush {
         const [nodeSize] = new Uint16Array(data, byteOffset + 2, 1);
         const [numItems] = new Uint32Array(data, byteOffset + 4, 1);
 
-        return new Flatbush(
-            numItems,
-            nodeSize,
-            ArrayType,
-            undefined,
-            data,
-            byteOffset
-        );
+        return new Flatbush(numItems, nodeSize, ArrayType, undefined, data, byteOffset);
     }
 
     /**
