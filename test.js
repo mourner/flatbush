@@ -119,22 +119,24 @@ test('reconstructs an index from array buffer', () => {
 
 test('throws an error when reconstructing an index from array buffer if not 8-byte aligned', () => {
     const index = createIndex();
-    const newArrayBuffer = new ArrayBuffer(index.data.byteLength + 10);
-    const newView = new Uint8Array(newArrayBuffer, 10);
+    const byteOffset = 12;
+    const newArrayBuffer = new ArrayBuffer(index.data.byteLength + byteOffset);
+    const newView = new Uint8Array(newArrayBuffer, byteOffset);
     newView.set(new Uint8Array(index.data));
 
     assert.throws(() => {
-        Flatbush.from(newView);
+        Flatbush.from(newArrayBuffer, byteOffset);
     });
 });
 
 test('reconstructs an index from a Uint8Array', () => {
     const index = createIndex();
-    const newArrayBuffer = new ArrayBuffer(index.data.byteLength + 16);
-    const newView = new Uint8Array(newArrayBuffer, 16);
+    const byteOffset = 16;
+    const newArrayBuffer = new ArrayBuffer(index.data.byteLength + byteOffset);
+    const newView = new Uint8Array(newArrayBuffer, byteOffset);
     newView.set(new Uint8Array(index.data));
 
-    const index2 = Flatbush.from(newView);
+    const index2 = Flatbush.from(newArrayBuffer, byteOffset);
 
     assert.deepEqual(index._boxes, index2._boxes);
     assert.deepEqual(index._indices, index2._indices);
