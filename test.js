@@ -117,6 +117,33 @@ test('reconstructs an index from array buffer', () => {
     assert.deepEqual(index, index2);
 });
 
+test('throws an error when reconstructing an index from array buffer if not 8-byte aligned', () => {
+    const index = createIndex();
+    const newArrayBuffer = new ArrayBuffer(index.data.byteLength + 10);
+    const newView = new Uint8Array(newArrayBuffer, 10);
+    newView.set(new Uint8Array(index.data));
+
+    assert.throws(() => {
+        Flatbush.from(newView);
+    });
+});
+
+test('reconstructs an index from a Uint8Array', () => {
+    const index = createIndex();
+    const newArrayBuffer = new ArrayBuffer(index.data.byteLength + 16);
+    const newView = new Uint8Array(newArrayBuffer, 16);
+    newView.set(new Uint8Array(index.data));
+
+    const index2 = Flatbush.from(newView);
+
+    assert.deepEqual(index._boxes, index2._boxes);
+    assert.deepEqual(index._indices, index2._indices);
+    assert.deepEqual(index.numItems, index2.numItems);
+    assert.deepEqual(index.nodeSize, index2.nodeSize);
+    assert.deepEqual(index._levelBounds, index2._levelBounds);
+    assert.notDeepEqual(index.byteOffset, index2.byteOffset);
+});
+
 test('throws an error if added less items than the index size', () => {
     assert.throws(() => {
         const index = new Flatbush(data.length / 4);
