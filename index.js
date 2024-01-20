@@ -10,7 +10,7 @@ export default class Flatbush {
     /**
      * Recreate a Flatbush index from raw `ArrayBuffer` or `SharedArrayBuffer` data.
      * @param {ArrayBuffer | SharedArrayBuffer} data
-     * @param {number} byteOffset byte offset to the start of the Flatbush buffer in the referenced ArrayBuffer.
+     * @param {number} [byteOffset=0] byte offset to the start of the Flatbush buffer in the referenced ArrayBuffer.
      * @returns {Flatbush} index
      */
     static from(data, byteOffset = 0) {
