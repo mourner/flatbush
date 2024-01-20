@@ -15,7 +15,7 @@ export default class Flatbush {
      */
     static from(data, byteOffset = 0) {
         if (byteOffset % 8 !== 0) {
-            throw new Error('Uint8Array offset must be 8-byte aligned.');
+            throw new Error('byteOffset must be 8-byte aligned.');
         }
 
         // @ts-expect-error duck typing array buffers
