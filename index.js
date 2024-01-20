@@ -48,7 +48,7 @@ export default class Flatbush {
      * @param {TypedArrayConstructor} [ArrayType=Float64Array] The array type used for coordinates storage (`Float64Array` by default).
      * @param {ArrayBufferConstructor | SharedArrayBufferConstructor} [ArrayBufferType=ArrayBuffer] The array buffer type used to store data (`ArrayBuffer` by default).
      * @param {ArrayBuffer | SharedArrayBuffer} [data] (Only used internally)
-     * @param {number} [byteOffset] (Only used internally)
+     * @param {number} [byteOffset=0] (Only used internally)
      */
     constructor(numItems, nodeSize = 16, ArrayType = Float64Array, ArrayBufferType = ArrayBuffer, data, byteOffset = 0) {
         if (numItems === undefined) throw new Error('Missing required argument: numItems.');
