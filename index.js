@@ -10,14 +10,20 @@ export default class Flatbush {
     /**
      * Recreate a Flatbush index from raw `ArrayBuffer` or `SharedArrayBuffer` data.
      * @param {ArrayBuffer | SharedArrayBuffer} data
+     * @param {number} [byteOffset=0] byte offset to the start of the Flatbush buffer in the referenced ArrayBuffer.
      * @returns {Flatbush} index
      */
-    static from(data) {
+    static from(data, byteOffset = 0) {
+        if (byteOffset % 8 !== 0) {
+            throw new Error('byteOffset must be 8-byte aligned.');
+        }
+
         // @ts-expect-error duck typing array buffers
         if (!data || data.byteLength === undefined || data.buffer) {
             throw new Error('Data must be an instance of ArrayBuffer or SharedArrayBuffer.');
         }
-        const [magic, versionAndType] = new Uint8Array(data, 0, 2);
+
+        const [magic, versionAndType] = new Uint8Array(data, byteOffset + 0, 2);
         if (magic !== 0xfb) {
             throw new Error('Data does not appear to be in a Flatbush format.');
         }
@@ -29,10 +35,10 @@ export default class Flatbush {
         if (!ArrayType) {
             throw new Error('Unrecognized array type.');
         }
-        const [nodeSize] = new Uint16Array(data, 2, 1);
-        const [numItems] = new Uint32Array(data, 4, 1);
+        const [nodeSize] = new Uint16Array(data, byteOffset + 2, 1);
+        const [numItems] = new Uint32Array(data, byteOffset + 4, 1);
 
-        return new Flatbush(numItems, nodeSize, ArrayType, undefined, data);
+        return new Flatbush(numItems, nodeSize, ArrayType, undefined, data, byteOffset);
     }
 
     /**
@@ -42,13 +48,15 @@ export default class Flatbush {
      * @param {TypedArrayConstructor} [ArrayType=Float64Array] The array type used for coordinates storage (`Float64Array` by default).
      * @param {ArrayBufferConstructor | SharedArrayBufferConstructor} [ArrayBufferType=ArrayBuffer] The array buffer type used to store data (`ArrayBuffer` by default).
      * @param {ArrayBuffer | SharedArrayBuffer} [data] (Only used internally)
+     * @param {number} [byteOffset=0] (Only used internally)
      */
-    constructor(numItems, nodeSize = 16, ArrayType = Float64Array, ArrayBufferType = ArrayBuffer, data) {
+    constructor(numItems, nodeSize = 16, ArrayType = Float64Array, ArrayBufferType = ArrayBuffer, data, byteOffset = 0) {
         if (numItems === undefined) throw new Error('Missing required argument: numItems.');
         if (isNaN(numItems) || numItems <= 0) throw new Error(`Unexpected numItems value: ${numItems}.`);
 
         this.numItems = +numItems;
         this.nodeSize = Math.min(Math.max(+nodeSize, 2), 65535);
+        this.byteOffset = byteOffset;
 
         // calculate the total number of nodes in the R-tree to allocate space for
         // and the index of each tree level (used in search later)
@@ -74,8 +82,8 @@ export default class Flatbush {
         // @ts-expect-error duck typing array buffers
         if (data && data.byteLength !== undefined && !data.buffer) {
             this.data = data;
-            this._boxes = new this.ArrayType(this.data, 8, numNodes * 4);
-            this._indices = new this.IndexArrayType(this.data, 8 + nodesByteSize, numNodes);
+            this._boxes = new this.ArrayType(this.data, byteOffset + 8, numNodes * 4);
+            this._indices = new this.IndexArrayType(this.data, byteOffset + 8 + nodesByteSize, numNodes);
 
             this._pos = numNodes * 4;
             this.minX = this._boxes[this._pos - 4];
