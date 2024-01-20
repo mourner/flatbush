@@ -20,9 +20,7 @@ export default class Flatbush {
 
         // @ts-expect-error duck typing array buffers
         if (!data || data.byteLength === undefined || data.buffer) {
-            throw new Error(
-                'Data must be an instance of ArrayBuffer, or SharedArrayBuffer.'
-            );
+            throw new Error('Data must be an instance of ArrayBuffer or SharedArrayBuffer.');
         }
 
         const [magic, versionAndType] = new Uint8Array(data, byteOffset + 0, 2);
