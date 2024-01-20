@@ -140,10 +140,10 @@ test('reconstructs an index from a Uint8Array', () => {
 
     assert.deepEqual(index._boxes, index2._boxes);
     assert.deepEqual(index._indices, index2._indices);
-    assert.deepEqual(index.numItems, index2.numItems);
-    assert.deepEqual(index.nodeSize, index2.nodeSize);
+    assert.equal(index.numItems, index2.numItems);
+    assert.equal(index.nodeSize, index2.nodeSize);
     assert.deepEqual(index._levelBounds, index2._levelBounds);
-    assert.notDeepEqual(index.byteOffset, index2.byteOffset);
+    assert.notEqual(index.byteOffset, index2.byteOffset);
 });
 
 test('throws an error if added less items than the index size', () => {
