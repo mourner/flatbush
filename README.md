@@ -2,15 +2,13 @@
 
 A really fast **static spatial index** for 2D points and rectangles in JavaScript.
 
-An efficient implementation of the [packed Hilbert R-tree](https://en.wikipedia.org/wiki/Hilbert_R-tree#Packed_Hilbert_R-trees) algorithm. Enables fast spatial queries on a very large number of objects (e.g. millions), which is very useful in maps, data visualizations and computational geometry algorithms.
-
-Similar to [RBush](https://github.com/mourner/rbush), with the following key differences:
+An efficient implementation of the [packed Hilbert R-tree](https://en.wikipedia.org/wiki/Hilbert_R-tree#Packed_Hilbert_R-trees) algorithm. Enables fast spatial queries on a very large number of objects (e.g. millions), which is very useful in maps, data visualizations and computational geometry algorithms. Similar to [RBush](https://github.com/mourner/rbush), with the following key differences:
 
 - **Static**: you can't add/remove items after initial indexing.
 - **Faster** indexing and search, with much lower **memory** footprint.
-- Index is stored as a single **array buffer** (so you can [transfer](https://developer.mozilla.org/en-US/docs/Glossary/Transferable_objects) it between threads or store it as a compact binary file).
+- Index is stored as a single **array buffer** (to [transfer](https://developer.mozilla.org/en-US/docs/Glossary/Transferable_objects) between threads or save as a compact binary file).
 
-Supports geographic locations with the [geoflatbush](https://github.com/mourner/geoflatbush) extension.
+Supports geographic locations with the [geoflatbush](https://github.com/mourner/geoflatbush) extension. See also: [KDBush](https://github.com/mourner/kdbush), a similar library for points.
 
 [![Build Status](https://github.com/mourner/flatbush/workflows/Node/badge.svg?branch=main)](https://github.com/mourner/flatbush/actions) [![minzipped size](https://badgen.net/bundlephobia/minzip/flatbush)](https://esm.run/flatbush) [![Simply Awesome](https://img.shields.io/badge/simply-awesome-brightgreen.svg)](https://github.com/mourner/projects)
 
@@ -112,7 +110,7 @@ const ids = index.neighbors(10, 10, 5); // returns 5 ids
 `maxResults` and `maxDistance` are `Infinity` by default.
 Also accepts a `filterFn` similar to `index.search`.
 
-#### `Flatbush.from(data)`
+#### `Flatbush.from(data[, byteOffset])`
 
 Recreates a Flatbush index from raw `ArrayBuffer` or `SharedArrayBuffer` data
 (that's exposed as `index.data` on a previously indexed Flatbush instance).
