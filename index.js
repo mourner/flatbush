@@ -119,7 +119,7 @@ export default class Flatbush {
      * @param {number} maxY
      * @returns {number} A zero-based, incremental number that represents the newly added rectangle.
      */
-    add(minX, minY, maxX, maxY) {
+    add(minX, minY, maxX = minX, maxY = minY) {
         const index = this._pos >> 2;
         const boxes = this._boxes;
         this._indices[index] = index;

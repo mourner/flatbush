@@ -74,9 +74,10 @@ other types may be faster in certain cases (e.g. `Int32Array` when your data is 
 - `ArrayBufferType`: the array buffer type used to store data (`ArrayBuffer` by default);
 you may prefer `SharedArrayBuffer` if you want to share the index between threads (multiple `Worker`, `SharedWorker` or `ServiceWorker`).
 
-#### `index.add(minX, minY, maxX, maxY)`
+#### `index.add(minX, minY[, maxX, maxY])`
 
 Adds a given rectangle to the index. Returns a zero-based, incremental number that represents the newly added rectangle.
+If not provided, `maxX` and `maxY` default to `minX` and `minY` (essentially adding a point).
 
 #### `index.finish()`
 

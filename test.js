@@ -146,6 +146,13 @@ test('reconstructs an index from a Uint8Array', () => {
     assert.notEqual(index.byteOffset, index2.byteOffset);
 });
 
+test('defaults to adding a point when not providing maxX/maxY', () => {
+    const index = new Flatbush(1);
+    index.add(10, 10);
+    index.finish();
+    assert.deepEqual(index.search(0, 0, 20, 20), [0]);
+});
+
 test('throws an error if added less items than the index size', () => {
     assert.throws(() => {
         const index = new Flatbush(data.length / 4);
