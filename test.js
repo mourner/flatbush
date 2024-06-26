@@ -1,4 +1,3 @@
-/* global SharedArrayBuffer */
 import Flatbush from './index.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';

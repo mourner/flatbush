@@ -12,7 +12,7 @@
   "types": "index.d.ts",
   "scripts": {
     "pretest": "eslint index.js test.js bench.js",
-    "test": "tsc && node test.js",
+    "test": "tsc && node --test",
     "build": "rollup index.js -o flatbush.js -n Flatbush -f umd -p node-resolve",
     "prepublishOnly": "tsc && npm run build"
   },
@@ -24,12 +24,6 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mourner/flatbush.git"
-  },
-  "eslintConfig": {
-    "extends": "mourner",
-    "rules": {
-      "no-labels": "off"
-    }
   },
   "keywords": [
     "geometry",
@@ -44,11 +38,11 @@
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^15.2.3",
-    "eslint": "^8.56.0",
-    "eslint-config-mourner": "^3.0.0",
+    "eslint": "^9.5.0",
+    "eslint-config-mourner": "^4.0.0",
     "rbush": "^3.0.1",
     "rbush-knn": "^3.0.1",
     "rollup": "^4.18.0",
-    "typescript": "^5.4.5"
+    "typescript": "^5.5.2"
   }
 }

@@ -268,6 +268,7 @@ export default class Flatbush {
         const results = [];
         const maxDistSquared = maxDistance * maxDistance;
 
+        /* eslint-disable no-labels */
         outer: while (nodeIndex !== undefined) {
             // find the end index of the node
             const end = Math.min(nodeIndex + this.nodeSize * 4, upperBound(nodeIndex, this._levelBounds));
