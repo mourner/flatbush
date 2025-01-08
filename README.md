@@ -149,3 +149,5 @@ index 1,000,000 rectangles | 273ms | 1143ms
 - [FlatGeobuf](https://github.com/flatgeobuf/flatgeobuf) (a geospatial format inspired by Flatbush)
 - [IMQS/flatbush](https://github.com/IMQS/flatbush) (C++ port, no longer maintained)
 - [msfstef/flatbush-dart](https://github.com/msfstef/flatbush-dart) (Dart port)
+- [kylebarron/geo-index](https://github.com/kylebarron/geo-index) (Rust port and Python bindings, with ABI compatibility to this library)
+- [kylebarron/literate-flatbush](https://github.com/kylebarron/literate-flatbush) (["literate"](https://en.wikipedia.org/wiki/Literate_programming) JS port that documents the internal algorithm)
