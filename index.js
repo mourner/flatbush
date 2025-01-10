@@ -72,18 +72,19 @@ export default class Flatbush {
         this.ArrayType = ArrayType;
         this.IndexArrayType = numNodes < 16384 ? Uint16Array : Uint32Array;
 
-        const arrayTypeIndex = ARRAY_TYPES.indexOf(this.ArrayType);
-        const nodesByteSize = numNodes * 4 * this.ArrayType.BYTES_PER_ELEMENT;
+        const arrayTypeIndex = ARRAY_TYPES.indexOf(ArrayType);
+        const nodesByteSize = numNodes * 4 * ArrayType.BYTES_PER_ELEMENT;
 
         if (arrayTypeIndex < 0) {
             throw new Error(`Unexpected typed array class: ${ArrayType}.`);
         }
 
-        // @ts-expect-error duck typing array buffers
-        if (data && data.byteLength !== undefined && !data.buffer) {
+        if (data) {
             this.data = data;
-            this._boxes = new this.ArrayType(this.data, byteOffset + 8, numNodes * 4);
-            this._indices = new this.IndexArrayType(this.data, byteOffset + 8 + nodesByteSize, numNodes);
+            // @ts-expect-error TS can't figure out the constructor from the complex union type
+            this._boxes = new ArrayType(data, byteOffset + 8, numNodes * 4);
+            // @ts-expect-error
+            this._indices = new this.IndexArrayType(data, byteOffset + 8 + nodesByteSize, numNodes);
 
             this._pos = numNodes * 4;
             this.minX = this._boxes[this._pos - 4];
@@ -93,7 +94,9 @@ export default class Flatbush {
 
         } else {
             this.data = new ArrayBufferType(8 + nodesByteSize + numNodes * this.IndexArrayType.BYTES_PER_ELEMENT);
-            this._boxes = new this.ArrayType(this.data, 8, numNodes * 4);
+            // @ts-expect-error
+            this._boxes = new ArrayType(this.data, 8, numNodes * 4);
+            // @ts-expect-error
             this._indices = new this.IndexArrayType(this.data, 8 + nodesByteSize, numNodes);
             this._pos = 0;
             this.minX = Infinity;
