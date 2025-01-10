@@ -3,13 +3,16 @@ import FlatQueue from 'flatqueue';
 const ARRAY_TYPES = [Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array, Int32Array, Uint32Array, Float32Array, Float64Array];
 const VERSION = 3; // serialized format version
 
-/** @typedef {Int8ArrayConstructor | Uint8ArrayConstructor | Uint8ClampedArrayConstructor | Int16ArrayConstructor | Uint16ArrayConstructor | Int32ArrayConstructor | Uint32ArrayConstructor | Float32ArrayConstructor | Float64ArrayConstructor} TypedArrayConstructor */
+/** @template {ArrayBufferLike} T @typedef {Uint8Array<T> | Int8Array<T> | Uint8ClampedArray<T> | Uint16Array<T> | Int16Array<T> | Uint32Array<T> | Int32Array<T> | Float32Array<T> | Float64Array<T>} TypedArray<T = ArrayBuffer> */
+/** @template {ArrayBufferLike} T @typedef {Uint16Array<T> | Uint32Array<T>} IndexArray<T = ArrayBuffer> */
+/** @typedef {(Int8ArrayConstructor | Uint8ArrayConstructor | Uint8ClampedArrayConstructor | Int16ArrayConstructor | Uint16ArrayConstructor | Int32ArrayConstructor | Uint32ArrayConstructor | Float32ArrayConstructor | Float64ArrayConstructor) & {new <T extends ArrayBufferLike = ArrayBuffer>(arrayBuffer: T, byteOffset?: number, length?: number): TypedArray<T>}} TypedArrayConstructor */
+/** @typedef {(Uint16ArrayConstructor | Uint32ArrayConstructor) & {new <T extends ArrayBufferLike = ArrayBuffer>(arrayBuffer: T, byteOffset?: number, length?: number): IndexArray<T>}} IndexArrayConstructor */
 
 export default class Flatbush {
 
     /**
      * Recreate a Flatbush index from raw `ArrayBuffer` or `SharedArrayBuffer` data.
-     * @param {ArrayBuffer | SharedArrayBuffer} data
+     * @param {ArrayBufferLike} data
      * @param {number} [byteOffset=0] byte offset to the start of the Flatbush buffer in the referenced ArrayBuffer.
      * @returns {Flatbush} index
      */
@@ -47,7 +50,7 @@ export default class Flatbush {
      * @param {number} [nodeSize=16] Size of the tree node (16 by default).
      * @param {TypedArrayConstructor} [ArrayType=Float64Array] The array type used for coordinates storage (`Float64Array` by default).
      * @param {ArrayBufferConstructor | SharedArrayBufferConstructor} [ArrayBufferType=ArrayBuffer] The array buffer type used to store data (`ArrayBuffer` by default).
-     * @param {ArrayBuffer | SharedArrayBuffer} [data] (Only used internally)
+     * @param {ArrayBufferLike} [data] (Only used internally)
      * @param {number} [byteOffset=0] (Only used internally)
      */
     constructor(numItems, nodeSize = 16, ArrayType = Float64Array, ArrayBufferType = ArrayBuffer, data, byteOffset = 0) {
@@ -70,9 +73,10 @@ export default class Flatbush {
         } while (n !== 1);
 
         this.ArrayType = ArrayType;
+        /** @type IndexArrayConstructor */
         this.IndexArrayType = numNodes < 16384 ? Uint16Array : Uint32Array;
 
-        const arrayTypeIndex = ARRAY_TYPES.indexOf(this.ArrayType);
+        const arrayTypeIndex = ARRAY_TYPES.indexOf(ArrayType);
         const nodesByteSize = numNodes * 4 * this.ArrayType.BYTES_PER_ELEMENT;
 
         if (arrayTypeIndex < 0) {
@@ -82,8 +86,8 @@ export default class Flatbush {
         // @ts-expect-error duck typing array buffers
         if (data && data.byteLength !== undefined && !data.buffer) {
             this.data = data;
-            this._boxes = new this.ArrayType(this.data, byteOffset + 8, numNodes * 4);
-            this._indices = new this.IndexArrayType(this.data, byteOffset + 8 + nodesByteSize, numNodes);
+            this._boxes = new ArrayType(data, byteOffset + 8, numNodes * 4);
+            this._indices = new this.IndexArrayType(data, byteOffset + 8 + nodesByteSize, numNodes);
 
             this._pos = numNodes * 4;
             this.minX = this._boxes[this._pos - 4];
@@ -93,7 +97,7 @@ export default class Flatbush {
 
         } else {
             this.data = new ArrayBufferType(8 + nodesByteSize + numNodes * this.IndexArrayType.BYTES_PER_ELEMENT);
-            this._boxes = new this.ArrayType(this.data, 8, numNodes * 4);
+            this._boxes = new ArrayType(this.data, 8, numNodes * 4);
             this._indices = new this.IndexArrayType(this.data, 8 + nodesByteSize, numNodes);
             this._pos = 0;
             this.minX = Infinity;
@@ -343,7 +347,7 @@ function upperBound(value, arr) {
  * Custom quicksort that partially sorts bbox data alongside the hilbert values.
  * @param {Uint32Array} values
  * @param {InstanceType<TypedArrayConstructor>} boxes
- * @param {Uint16Array | Uint32Array} indices
+ * @param {IndexArray<ArrayBufferLike>} indices
  * @param {number} left
  * @param {number} right
  * @param {number} nodeSize
@@ -370,7 +374,7 @@ function sort(values, boxes, indices, left, right, nodeSize) {
  * Swap two values and two corresponding boxes.
  * @param {Uint32Array} values
  * @param {InstanceType<TypedArrayConstructor>} boxes
- * @param {Uint16Array | Uint32Array} indices
+ * @param {IndexArray<ArrayBufferLike>} indices
  * @param {number} i
  * @param {number} j
  */
