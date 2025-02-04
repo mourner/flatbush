@@ -279,9 +279,12 @@ export default class Flatbush {
             // add child nodes to the queue
             for (let pos = nodeIndex; pos < end; pos += 4) {
                 const index = this._indices[pos >> 2] | 0;
-
-                const dx = axisDist(x, this._boxes[pos], this._boxes[pos + 2]);
-                const dy = axisDist(y, this._boxes[pos + 1], this._boxes[pos + 3]);
+                const minX = this._boxes[pos];
+                const minY = this._boxes[pos + 1];
+                const maxX = this._boxes[pos + 2];
+                const maxY = this._boxes[pos + 3];
+                const dx = x < minX ? minX - x : x > maxX ? x - maxX : 0;
+                const dy = y < minY ? minY - y : y > maxY ? y - maxY : 0;
                 const dist = dx * dx + dy * dy;
                 if (dist > maxDistSquared) continue;
 
@@ -311,16 +314,6 @@ export default class Flatbush {
         q.clear();
         return results;
     }
-}
-
-/**
- * 1D distance from a value to a range.
- * @param {number} k
- * @param {number} min
- * @param {number} max
- */
-function axisDist(k, min, max) {
-    return k < min ? min - k : k <= max ? 0 : k - max;
 }
 
 /**
