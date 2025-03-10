@@ -9,7 +9,7 @@ export default class Flatbush {
 
     /**
      * Recreate a Flatbush index from raw `ArrayBuffer` or `SharedArrayBuffer` data.
-     * @param {ArrayBuffer | SharedArrayBuffer} data
+     * @param {ArrayBufferLike} data
      * @param {number} [byteOffset=0] byte offset to the start of the Flatbush buffer in the referenced ArrayBuffer.
      * @returns {Flatbush} index
      */
@@ -47,7 +47,7 @@ export default class Flatbush {
      * @param {number} [nodeSize=16] Size of the tree node (16 by default).
      * @param {TypedArrayConstructor} [ArrayType=Float64Array] The array type used for coordinates storage (`Float64Array` by default).
      * @param {ArrayBufferConstructor | SharedArrayBufferConstructor} [ArrayBufferType=ArrayBuffer] The array buffer type used to store data (`ArrayBuffer` by default).
-     * @param {ArrayBuffer | SharedArrayBuffer} [data] (Only used internally)
+     * @param {ArrayBufferLike} [data] (Only used internally)
      * @param {number} [byteOffset=0] (Only used internally)
      */
     constructor(numItems, nodeSize = 16, ArrayType = Float64Array, ArrayBufferType = ArrayBuffer, data, byteOffset = 0) {
@@ -81,9 +81,7 @@ export default class Flatbush {
 
         if (data) {
             this.data = data;
-            // @ts-expect-error TS can't figure out the constructor from the complex union type
             this._boxes = new ArrayType(data, byteOffset + 8, numNodes * 4);
-            // @ts-expect-error
             this._indices = new this.IndexArrayType(data, byteOffset + 8 + nodesByteSize, numNodes);
 
             this._pos = numNodes * 4;
@@ -93,20 +91,18 @@ export default class Flatbush {
             this.maxY = this._boxes[this._pos - 1];
 
         } else {
-            this.data = new ArrayBufferType(8 + nodesByteSize + numNodes * this.IndexArrayType.BYTES_PER_ELEMENT);
-            // @ts-expect-error
-            this._boxes = new ArrayType(this.data, 8, numNodes * 4);
-            // @ts-expect-error
-            this._indices = new this.IndexArrayType(this.data, 8 + nodesByteSize, numNodes);
+            const data = this.data = new ArrayBufferType(8 + nodesByteSize + numNodes * this.IndexArrayType.BYTES_PER_ELEMENT);
+            this._boxes = new ArrayType(data, 8, numNodes * 4);
+            this._indices = new this.IndexArrayType(data, 8 + nodesByteSize, numNodes);
             this._pos = 0;
             this.minX = Infinity;
             this.minY = Infinity;
             this.maxX = -Infinity;
             this.maxY = -Infinity;
 
-            new Uint8Array(this.data, 0, 2).set([0xfb, (VERSION << 4) + arrayTypeIndex]);
-            new Uint16Array(this.data, 2, 1)[0] = nodeSize;
-            new Uint32Array(this.data, 4, 1)[0] = numItems;
+            new Uint8Array(data, 0, 2).set([0xfb, (VERSION << 4) + arrayTypeIndex]);
+            new Uint16Array(data, 2, 1)[0] = nodeSize;
+            new Uint32Array(data, 4, 1)[0] = numItems;
         }
 
         // a priority queue for k-nearest-neighbors queries
