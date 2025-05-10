@@ -225,11 +225,40 @@ export default class Flatbush {
 
             // search through child nodes
             for (let /** @type number */ pos = nodeIndex; pos < end; pos += 4) {
+                const nodeMinX = this._boxes[pos + 0];
+                const nodeMinY = this._boxes[pos + 1];
+                const nodeMaxX = this._boxes[pos + 2];
+                const nodeMaxY = this._boxes[pos + 3];
+
                 // check if node bbox intersects with query bbox
-                if (maxX < this._boxes[pos]) continue; // maxX < nodeMinX
-                if (maxY < this._boxes[pos + 1]) continue; // maxY < nodeMinY
-                if (minX > this._boxes[pos + 2]) continue; // minX > nodeMaxX
-                if (minY > this._boxes[pos + 3]) continue; // minY > nodeMaxY
+                if (maxX < nodeMinX || maxY < nodeMinY || minX > nodeMaxX || minY > nodeMaxY) {
+                    continue;
+                }
+
+                // check if node bbox is completely inside query bbox
+                if (minX <= nodeMinX && minY <= nodeMinY && maxX >= nodeMaxX && maxY >= nodeMaxY) {
+                    let pos_start = pos;
+                    let pos_end = pos;
+
+                    // depth search while not leaf
+                    while (pos_start >= this.numItems * 4) {
+                        pos_start = this._indices[pos_start >> 2] | 0;
+                        const pos_end_start = this._indices[pos_end >> 2] | 0;
+                        pos_end = Math.min(pos_end_start + this.nodeSize * 4, upperBound(pos_end_start, this._levelBounds))-4;
+                    }
+
+                    for (let /** @type number */ leaf_pos = pos_start; leaf_pos <= pos_end; leaf_pos += 4) {
+                        const nodeMinX = this._boxes[leaf_pos + 0];
+                        const nodeMinY = this._boxes[leaf_pos + 1];
+                        const nodeMaxX = this._boxes[leaf_pos + 2];
+                        const nodeMaxY = this._boxes[leaf_pos + 3];
+                        const leaf_index = this._indices[leaf_pos >> 2];
+                        if (filterFn === undefined || filterFn(leaf_index)) {
+                            results.push(leaf_index); // leaf item
+                        }
+                    }
+                    continue;
+                }
 
                 const index = this._indices[pos >> 2] | 0;
 
