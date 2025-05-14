@@ -235,32 +235,30 @@ export default class Flatbush {
                     continue;
                 }
 
-                // check if node bbox is completely inside query bbox
-                if (minX <= nodeMinX && minY <= nodeMinY && maxX >= nodeMaxX && maxY >= nodeMaxY) {
-                    let posStart = pos;
-                    let posEnd = pos;
-
-                    // depth search while not leaf
-                    while (posStart >= this.numItems * 4) {
-                        posStart = this._indices[posStart >> 2] | 0;
-                        const posEndStart = this._indices[posEnd >> 2] | 0;
-                        posEnd = Math.min(posEndStart + this.nodeSize * 4, upperBound(posEndStart, this._levelBounds)) - 4;
-                    }
-
-                    for (let /** @type number */ leafPos = posStart; leafPos <= posEnd; leafPos += 4) {
-                        const leafIndex = this._indices[leafPos >> 2];
-                        if (filterFn === undefined || filterFn(leafIndex)) {
-                            results.push(leafIndex); // leaf item
-                        }
-                    }
-                    continue;
-                }
-
                 const index = this._indices[pos >> 2] | 0;
 
                 if (nodeIndex >= this.numItems * 4) {
-                    queue.push(index); // node; add it to the search queue
+                    // check if node bbox is completely inside query bbox
+                    if (minX <= nodeMinX && minY <= nodeMinY && maxX >= nodeMaxX && maxY >= nodeMaxY) {
+                        let posStart = pos;
+                        let posEnd = pos;
 
+                        // depth search while not leaf
+                        while (posStart >= this.numItems * 4) {
+                            posStart = this._indices[posStart >> 2] | 0;
+                            const posEndStart = this._indices[posEnd >> 2] | 0;
+                            posEnd = Math.min(posEndStart + this.nodeSize * 4, upperBound(posEndStart, this._levelBounds)) - 4;
+                        }
+
+                        for (let /** @type number */ leafPos = posStart; leafPos <= posEnd; leafPos += 4) {
+                            const leafIndex = this._indices[leafPos >> 2];
+                            if (filterFn === undefined || filterFn(leafIndex)) {
+                                results.push(leafIndex); // leaf item
+                            }
+                        }
+                    } else {
+                        queue.push(index); // node; add it to the search queue
+                    }
                 } else if (filterFn === undefined || filterFn(index)) {
                     results.push(index); // leaf item
                 }
