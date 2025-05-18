@@ -223,8 +223,8 @@ test('reconstructs an index from SharedArrayBuffer', () => {
 });
 
 test('quicksort should work with an inbalanced dataset', () => {
-    const n = 15000
-    const index = new Flatbush(2*n);
+    const n = 15000;
+    const index = new Flatbush(2 * n);
 
     function linspace(start, stop, num, endpoint = true) {
         const div = endpoint ? (num - 1) : num;
@@ -232,8 +232,8 @@ test('quicksort should work with an inbalanced dataset', () => {
         return Array.from({length: num}, (_, i) => start + step * i);
     }
 
-    const items = linspace(0, 1000, n)
-    const items2 = linspace(0, 1000, n)
+    const items = linspace(0, 1000, n);
+    const items2 = linspace(0, 1000, n);
 
     for (const p of items) {
         index.add(p, 0, p, 0);
