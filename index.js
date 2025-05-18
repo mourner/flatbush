@@ -343,7 +343,22 @@ function upperBound(value, arr) {
 function sort(values, boxes, indices, left, right, nodeSize) {
     if (Math.floor(left / nodeSize) >= Math.floor(right / nodeSize)) return;
 
-    const pivot = values[(left + right) >> 1];
+    // apply median of three method
+    const start = values[left];
+    const mid = values[(left + right) >> 1];
+    const end = values[right];
+
+    let pivot = end;
+
+    const x = Math.max(start, mid);
+    if (end > x) {
+        pivot = x;
+    } else if (x === start) {
+        pivot = Math.max(mid, end);
+    } else if (x === mid) {
+        pivot = Math.max(start, end);
+    }
+
     let i = left - 1;
     let j = right + 1;
 
