@@ -10,7 +10,7 @@ An efficient implementation of the [packed Hilbert R-tree](https://en.wikipedia.
 
 Supports geographic locations with the [geoflatbush](https://github.com/mourner/geoflatbush) extension. See also: [KDBush](https://github.com/mourner/kdbush), a similar library for points.
 
-[![Build Status](https://github.com/mourner/flatbush/workflows/Node/badge.svg?branch=main)](https://github.com/mourner/flatbush/actions) [![minzipped size](https://img.shields.io/bundlephobia/minzip/flatbush)](https://esm.run/flatbush) [![Simply Awesome](https://img.shields.io/badge/simply-awesome-brightgreen.svg)](https://github.com/mourner/projects)
+[![Build Status](https://github.com/mourner/flatbush/actions/workflows/node.yml/badge.svg)](https://github.com/mourner/flatbush/actions) [![minzipped size](https://img.shields.io/bundlephobia/minzip/flatbush)](https://esm.run/flatbush) [![Simply Awesome](https://img.shields.io/badge/simply-awesome-brightgreen.svg)](https://github.com/mourner/projects)
 
 ## Usage
 
