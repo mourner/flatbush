@@ -240,22 +240,7 @@ export default class Flatbush {
                 if (nodeIndex >= this.numItems * 4) {
                     // check if node bbox is completely inside query bbox
                     if (minX <= nodeMinX && minY <= nodeMinY && maxX >= nodeMaxX && maxY >= nodeMaxY) {
-                        let posStart = pos;
-                        let posEnd = pos;
-
-                        // depth search while not leaf
-                        while (posStart >= this.numItems * 4) {
-                            posStart = this._indices[posStart >> 2] | 0;
-                            const posEndStart = this._indices[posEnd >> 2] | 0;
-                            posEnd = Math.min(posEndStart + this.nodeSize * 4, upperBound(posEndStart, this._levelBounds)) - 4;
-                        }
-
-                        for (let /** @type number */ leafPos = posStart; leafPos <= posEnd; leafPos += 4) {
-                            const leafIndex = this._indices[leafPos >> 2];
-                            if (filterFn === undefined || filterFn(leafIndex)) {
-                                results.push(leafIndex); // leaf item
-                            }
-                        }
+                        addAllLeavesOfNode(results, pos, this.numItems, this._indices, this.nodeSize, this._levelBounds, filterFn);
                     } else {
                         queue.push(index); // node; add it to the search queue
                     }
@@ -332,6 +317,48 @@ export default class Flatbush {
 
         q.clear();
         return results;
+    }
+}
+
+/**
+ * Add all leaves of a node to the search result.
+ * @param {number[]} results
+ * @param {number} pos
+ * @param {number} numItems
+ * @param {Uint16Array<ArrayBuffer> | Uint32Array<ArrayBuffer>} indices
+ * @param {number} nodeSize
+ * @param {number[]} levelBounds
+ * @param {(index: number) => boolean} [filterFn] An optional function for filtering the results.
+ * @returns {void}
+ */
+function addAllLeavesOfNode(results, pos, numItems, indices, nodeSize, levelBounds, filterFn) {
+    let posStart = pos;
+    let posEnd = pos;
+
+    // depth search while not leaf
+    while (posStart >= numItems * 4) {
+        posStart = indices[posStart >> 2] | 0;
+        const posEndStart = indices[posEnd >> 2] | 0;
+        posEnd = Math.min(posEndStart + nodeSize * 4, upperBound(posEndStart, levelBounds)) - 4;
+    }
+    addLeafSegment(results, posStart, posEnd, indices, filterFn);
+}
+
+/**
+ * Add consecutive leaves to the search result.
+ * @param {number[]} results
+ * @param {number} posStart
+ * @param {number} posEnd
+ * @param {Uint16Array<ArrayBuffer> | Uint32Array<ArrayBuffer>} indices
+ * @param {(index: number) => boolean} [filterFn] An optional function for filtering the results.
+ * @returns {void}
+ */
+function addLeafSegment(results, posStart, posEnd, indices, filterFn) {
+    for (let /** @type number */ leafPos = posStart; leafPos <= posEnd; leafPos += 4) {
+        const leafIndex = indices[leafPos >> 2];
+        if (filterFn === undefined || filterFn(leafIndex)) {
+            results.push(leafIndex); // leaf item
+        }
     }
 }
 
