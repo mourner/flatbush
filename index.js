@@ -341,19 +341,7 @@ function addAllLeavesOfNode(results, pos, numItems, indices, nodeSize, levelBoun
         const posEndStart = indices[posEnd >> 2] | 0;
         posEnd = Math.min(posEndStart + nodeSize * 4, upperBound(posEndStart, levelBounds)) - 4;
     }
-    addLeafSegment(results, posStart, posEnd, indices, filterFn);
-}
 
-/**
- * Add consecutive leaves to the search result.
- * @param {number[]} results
- * @param {number} posStart
- * @param {number} posEnd
- * @param {Uint16Array<ArrayBuffer> | Uint32Array<ArrayBuffer>} indices
- * @param {(index: number) => boolean} [filterFn] An optional function for filtering the results.
- * @returns {void}
- */
-function addLeafSegment(results, posStart, posEnd, indices, filterFn) {
     for (let /** @type number */ leafPos = posStart; leafPos <= posEnd; leafPos += 4) {
         const leafIndex = indices[leafPos >> 2];
         if (filterFn === undefined || filterFn(leafIndex)) {
