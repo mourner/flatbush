@@ -224,22 +224,18 @@ export default class Flatbush {
             const end = Math.min(nodeIndex + this.nodeSize * 4, upperBound(nodeIndex, this._levelBounds));
 
             // search through child nodes
-            for (let /** @type number */ pos = nodeIndex; pos < end; pos += 4) {
-                const nodeMinX = this._boxes[pos + 0];
-                const nodeMinY = this._boxes[pos + 1];
-                const nodeMaxX = this._boxes[pos + 2];
-                const nodeMaxY = this._boxes[pos + 3];
-
+            for (let /** @type number */ pos = nodeIndex, boxes = this._boxes; pos < end; pos += 4) {
                 // check if node bbox intersects with query bbox
-                if (maxX < nodeMinX || maxY < nodeMinY || minX > nodeMaxX || minY > nodeMaxY) {
-                    continue;
-                }
+                if (maxX < boxes[pos]) continue; // maxX < nodeMinX
+                if (maxY < boxes[pos + 1]) continue; // maxY < nodeMinY
+                if (minX > boxes[pos + 2]) continue; // minX > nodeMaxX
+                if (minY > boxes[pos + 3]) continue; // minY > nodeMaxY
 
                 const index = this._indices[pos >> 2] | 0;
 
                 if (nodeIndex >= this.numItems * 4) {
                     // check if node bbox is completely inside query bbox
-                    if (minX <= nodeMinX && minY <= nodeMinY && maxX >= nodeMaxX && maxY >= nodeMaxY) {
+                    if (minX <= boxes[pos] && minY <= boxes[pos + 1] && maxX >= boxes[pos + 2] && maxY >= boxes[pos + 3]) {
                         addAllLeavesOfNode(results, pos, this.numItems, this._indices, this.nodeSize, this._levelBounds, filterFn);
                     } else {
                         queue.push(index); // node; add it to the search queue
