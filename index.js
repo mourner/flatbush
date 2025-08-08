@@ -206,7 +206,7 @@ export default class Flatbush {
      * @param {number} minY
      * @param {number} maxX
      * @param {number} maxY
-     * @param {(index: number) => boolean} [filterFn] An optional function for filtering the results.
+     * @param {(index: number, x0: number, y0: number, x1: number, y1: number) => boolean} [filterFn] An optional function that is called on every found item; if supplied, only items for which this function returns true will be included in the results array.
      * @returns {number[]} An array of indices of items intersecting or touching the given bounding box.
      */
     search(minX, minY, maxX, maxY, filterFn) {
@@ -226,17 +226,21 @@ export default class Flatbush {
             // search through child nodes
             for (let /** @type number */ pos = nodeIndex; pos < end; pos += 4) {
                 // check if node bbox intersects with query bbox
-                if (maxX < this._boxes[pos]) continue; // maxX < nodeMinX
-                if (maxY < this._boxes[pos + 1]) continue; // maxY < nodeMinY
-                if (minX > this._boxes[pos + 2]) continue; // minX > nodeMaxX
-                if (minY > this._boxes[pos + 3]) continue; // minY > nodeMaxY
+                const x0 = this._boxes[pos];
+                if (maxX < x0) continue;
+                const y0 = this._boxes[pos + 1];
+                if (maxY < y0) continue;
+                const x1 = this._boxes[pos + 2];
+                if (minX > x1) continue;
+                const y1 = this._boxes[pos + 3];
+                if (minY > y1) continue;
 
                 const index = this._indices[pos >> 2] | 0;
 
                 if (nodeIndex >= this.numItems * 4) {
                     queue.push(index); // node; add it to the search queue
 
-                } else if (filterFn === undefined || filterFn(index)) {
+                } else if (filterFn === undefined || filterFn(index, x0, y0, x1, y1)) {
                     results.push(index); // leaf item
                 }
             }
