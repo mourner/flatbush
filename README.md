@@ -92,11 +92,19 @@ Returns an array of indices of items intersecting or touching a given bounding b
 const ids = index.search(10, 10, 20, 20);
 ```
 
-If given a `filterFn`, calls it on every found item (passing an item index)
+If given a `filterFn`, calls it on every found item (passing the item's index & bounding box coordinates)
 and only includes it if the function returned a truthy value.
 
 ```js
 const ids = index.search(10, 10, 20, 20, (i) => items[i].foo === 'bar');
+```
+
+Alternatively, instead of using the array of indices returned by `search`, you can handle the results in the function:
+
+```js
+index.search(10, 10, 20, 20, (i, x0, y0, x1, y1) => {
+    console.log(`Item found: ${items[i]}, bbox: ${x0} ${y0} ${x1} ${y1}`);
+})
 ```
 
 #### `index.neighbors(x, y[, maxResults, maxDistance, filterFn])`
@@ -109,7 +117,10 @@ const ids = index.neighbors(10, 10, 5); // returns 5 ids
 ```
 
 `maxResults` and `maxDistance` are `Infinity` by default.
-Also accepts a `filterFn` similar to `index.search`.
+
+If given a `filterFn`, calls it on items that potentially belong to the results (passing the item's index)
+and only includes an item if the function returned a truthy value.
+Unlike `search`, it shouldn't be used for handling results.
 
 #### `Flatbush.from(data[, byteOffset])`
 
