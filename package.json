@@ -34,7 +34,7 @@
     "search"
   ],
   "dependencies": {
-    "flatqueue": "^2.0.3"
+    "flatqueue": "^3.0.0"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^16.0.1",
