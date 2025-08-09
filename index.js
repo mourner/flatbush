@@ -81,7 +81,9 @@ export default class Flatbush {
 
         if (data) {
             this.data = data;
+            // @ts-expect-error TS can't handle SharedArraBuffer overloads
             this._boxes = new ArrayType(data, byteOffset + 8, numNodes * 4);
+            // @ts-expect-error TS can't handle SharedArraBuffer overloads
             this._indices = new this.IndexArrayType(data, byteOffset + 8 + nodesByteSize, numNodes);
 
             this._pos = numNodes * 4;
@@ -92,7 +94,9 @@ export default class Flatbush {
 
         } else {
             const data = this.data = new ArrayBufferType(8 + nodesByteSize + numNodes * this.IndexArrayType.BYTES_PER_ELEMENT);
+            // @ts-expect-error TS can't handle SharedArraBuffer overloads
             this._boxes = new ArrayType(data, 8, numNodes * 4);
+            // @ts-expect-error TS can't handle SharedArraBuffer overloads
             this._indices = new this.IndexArrayType(data, 8 + nodesByteSize, numNodes);
             this._pos = 0;
             this.minX = Infinity;
