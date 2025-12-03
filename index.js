@@ -370,15 +370,38 @@ function sort(values, boxes, indices, left, right, nodeSize) {
     let i = left - 1;
     let j = right + 1;
 
+    let p = left;
+    let q = right;
+
     while (true) {
         do i++; while (values[i] < pivot);
         do j--; while (values[j] > pivot);
         if (i >= j) break;
         swap(values, boxes, indices, i, j);
+        // swap elements equal to pivot to left and right edge
+        if (values[i] === pivot) {
+            swap(values, boxes, indices, p, i);
+            p++;
+        }
+        if (pivot === values[j]) {
+            swap(values, boxes, indices, j, q);
+            q--;
+        }
+    }
+
+    i = j + 1;
+
+    // swap elements equal to pivot to the middle
+    for (let k = left; k < p; k++, j--) {
+        swap(values, boxes, indices, k, j);
+    }
+
+    for (let k = right; k > q; k--, i++) {
+        swap(values, boxes, indices, i, k);
     }
 
     sort(values, boxes, indices, left, j, nodeSize);
-    sort(values, boxes, indices, j + 1, right, nodeSize);
+    sort(values, boxes, indices, i, right, nodeSize);
 }
 
 /**
