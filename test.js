@@ -250,4 +250,35 @@ test('quicksort should work with an inbalanced dataset', () => {
     });
 });
 
+test('quicksort should work with duplicates', () => {
+    const n = 55000 + 5500 + 7700;
+    const index = new Flatbush(n);
+
+    let x = 0;
+
+    for (let p = 0; p < 55000; p++) {
+        index.add(x, 3.0, x, 3.0);
+        x++;
+    }
+
+    for (let p = 0; p < 5500; p++) {
+        index.add(x, 4.0, x, 4.0);
+        x++;
+    }
+
+    for (let p = 0; p < 7700; p++) {
+        index.add(x, 5.0, x, 5.0);
+        x++;
+    }
+
+    index.finish();
+
+    assert.doesNotThrow(() => {
+        index.search(0.5, -1, 6.5, 1);
+    });
+});
+
+
+
+
 function compare(a, b) { return a - b; }
