@@ -358,28 +358,14 @@ function sort(values, boxes, indices, left, right, nodeSize) {
     stackPointer++;
 
     while (stackPointer > 0) {
-        const l = stack.pop();
-        stackPointer--;
         const r = stack.pop();
+        stackPointer--;
+        const l = stack.pop();
         stackPointer--;
 
         if (Math.floor(l / nodeSize) >= Math.floor(r / nodeSize)) continue;
 
-        // apply median of three method
-        const start = values[l];
-        const mid = values[(l + r) >> 1];
-        const end = values[r];
-
-        let pivot = end;
-
-        const x = Math.max(start, mid);
-        if (end > x) {
-            pivot = x;
-        } else if (x === start) {
-            pivot = Math.max(mid, end);
-        } else if (x === mid) {
-            pivot = Math.max(start, end);
-        }
+        const pivot = partition(values, l, r);
 
         let i = l - 1;
         let j = r + 1;
@@ -391,11 +377,40 @@ function sort(values, boxes, indices, left, right, nodeSize) {
             swap(values, boxes, indices, i, j);
         }
 
+        stack.push(l);
+        stackPointer++;
         stack.push(j);
         stackPointer++;
         stack.push(j + 1);
         stackPointer++;
+        stack.push(r);
+        stackPointer++;
     }
+}
+
+/**
+ * Partition array.
+ * @param {Uint32Array} values
+ * @param {number} l
+ * @param {number} r
+ */
+function partition(values, l, r) {
+    // apply median of three method
+    const start = values[l];
+    const mid = values[(l + r) >> 1];
+    const end = values[r];
+
+    let pivot = end;
+
+    const x = Math.max(start, mid);
+    if (end > x) {
+        pivot = x;
+    } else if (x === start) {
+        pivot = Math.max(mid, end);
+    } else if (x === mid) {
+        pivot = Math.max(start, end);
+    }
+    return pivot;
 }
 
 /**
