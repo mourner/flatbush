@@ -365,7 +365,7 @@ function sort(values, boxes, indices, left, right, nodeSize) {
 
         if (Math.floor(l / nodeSize) >= Math.floor(r / nodeSize)) continue;
 
-        const pivot = partition(values, l, r);
+        const pivot = getPivot(values, l, r);
 
         let i = l - 1;
         let j = r + 1;
@@ -389,12 +389,12 @@ function sort(values, boxes, indices, left, right, nodeSize) {
 }
 
 /**
- * Partition array.
+ * Determine pivot value.
  * @param {Uint32Array} values
  * @param {number} l
  * @param {number} r
  */
-function partition(values, l, r) {
+function getPivot(values, l, r) {
     // apply median of three method
     const start = values[l];
     const mid = values[(l + r) >> 1];
