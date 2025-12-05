@@ -349,59 +349,53 @@ function upperBound(value, arr) {
  * @param {number} nodeSize
  */
 function sort(values, boxes, indices, left, right, nodeSize) {
-    if (Math.floor(left / nodeSize) >= Math.floor(right / nodeSize)) return;
+    const stack = [];
+    let stackPointer = 0;
 
-    // apply median of three method
-    const start = values[left];
-    const mid = values[(left + right) >> 1];
-    const end = values[right];
+    stack.push(left);
+    stackPointer++;
+    stack.push(right);
+    stackPointer++;
 
-    let pivot = end;
+    while (stackPointer > 0) {
+        const l = stack.pop();
+        stackPointer--;
+        const r = stack.pop();
+        stackPointer--;
 
-    const x = Math.max(start, mid);
-    if (end > x) {
-        pivot = x;
-    } else if (x === start) {
-        pivot = Math.max(mid, end);
-    } else if (x === mid) {
-        pivot = Math.max(start, end);
-    }
+        if (Math.floor(l / nodeSize) >= Math.floor(r / nodeSize)) continue;
 
-    let i = left - 1;
-    let j = right + 1;
+        // apply median of three method
+        const start = values[l];
+        const mid = values[(l + r) >> 1];
+        const end = values[r];
 
-    let p = left;
-    let q = right;
+        let pivot = end;
 
-    while (true) {
-        do i++; while (values[i] < pivot);
-        do j--; while (values[j] > pivot);
-        if (i >= j) break;
-        swap(values, boxes, indices, i, j);
-        // swap elements equal to pivot to left and right edge
-        if (values[i] === pivot) {
-            swap(values, boxes, indices, p, i);
-            p++;
+        const x = Math.max(start, mid);
+        if (end > x) {
+            pivot = x;
+        } else if (x === start) {
+            pivot = Math.max(mid, end);
+        } else if (x === mid) {
+            pivot = Math.max(start, end);
         }
-        if (pivot === values[j]) {
-            swap(values, boxes, indices, j, q);
-            q--;
+
+        let i = l - 1;
+        let j = r + 1;
+
+        while (true) {
+            do i++; while (values[i] < pivot);
+            do j--; while (values[j] > pivot);
+            if (i >= j) break;
+            swap(values, boxes, indices, i, j);
         }
+
+        stack.push(j);
+        stackPointer++;
+        stack.push(j + 1);
+        stackPointer++;
     }
-
-    i = j + 1;
-
-    // swap elements equal to pivot to the middle
-    for (let k = left; k < p; k++, j--) {
-        swap(values, boxes, indices, k, j);
-    }
-
-    for (let k = right; k > q; k--, i++) {
-        swap(values, boxes, indices, i, k);
-    }
-
-    sort(values, boxes, indices, left, j, nodeSize);
-    sort(values, boxes, indices, i, right, nodeSize);
 }
 
 /**
