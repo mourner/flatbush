@@ -385,14 +385,8 @@ function sort(values, boxes, indices, left, right, nodeSize) {
             swap(values, boxes, indices, i, j);
         }
 
-        stack.push(l);
-        stackPointer++;
-        stack.push(j);
-        stackPointer++;
-        stack.push(j + 1);
-        stackPointer++;
-        stack.push(r);
-        stackPointer++;
+        stack.push(l, j, j + 1, r);
+        stackPointer += 4;
     }
 }
 
