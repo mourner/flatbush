@@ -349,12 +349,58 @@ function upperBound(value, arr) {
  * @param {number} nodeSize
  */
 function sort(values, boxes, indices, left, right, nodeSize) {
-    if (Math.floor(left / nodeSize) >= Math.floor(right / nodeSize)) return;
+    const stack = [];
+    let stackPointer = 0;
 
+    stack.push(left);
+    stackPointer++;
+    stack.push(right);
+    stackPointer++;
+
+    while (stackPointer > 0) {
+        // @ts-expect-error
+        const r = stack.pop();
+        stackPointer--;
+        const l = stack.pop();
+        stackPointer--;
+
+        // @ts-expect-error
+        if ((r - l) <= nodeSize) {
+            // @ts-expect-error
+            if (Math.floor(l / nodeSize) >= Math.floor(r / nodeSize)) continue;
+        }
+
+        // @ts-expect-error
+        const pivot = getPivot(values, l, r);
+
+        // @ts-expect-error
+        let i = l - 1;
+        // @ts-expect-error
+        let j = r + 1;
+
+        while (true) {
+            do i++; while (values[i] < pivot);
+            do j--; while (values[j] > pivot);
+            if (i >= j) break;
+            swap(values, boxes, indices, i, j);
+        }
+
+        stack.push(l, j, j + 1, r);
+        stackPointer += 4;
+    }
+}
+
+/**
+ * Determine pivot value.
+ * @param {Uint32Array} values
+ * @param {number} l
+ * @param {number} r
+ */
+function getPivot(values, l, r) {
     // apply median of three method
-    const start = values[left];
-    const mid = values[(left + right) >> 1];
-    const end = values[right];
+    const start = values[l];
+    const mid = values[(l + r) >> 1];
+    const end = values[r];
 
     let pivot = end;
 
@@ -366,19 +412,7 @@ function sort(values, boxes, indices, left, right, nodeSize) {
     } else if (x === mid) {
         pivot = Math.max(start, end);
     }
-
-    let i = left - 1;
-    let j = right + 1;
-
-    while (true) {
-        do i++; while (values[i] < pivot);
-        do j--; while (values[j] > pivot);
-        if (i >= j) break;
-        swap(values, boxes, indices, i, j);
-    }
-
-    sort(values, boxes, indices, left, j, nodeSize);
-    sort(values, boxes, indices, j + 1, right, nodeSize);
+    return pivot;
 }
 
 /**
