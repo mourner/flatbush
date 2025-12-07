@@ -349,33 +349,17 @@ function upperBound(value, arr) {
  * @param {number} nodeSize
  */
 function sort(values, boxes, indices, left, right, nodeSize) {
-    const stack = [];
-    let stackPointer = 0;
+    const stack = [left, right];
 
-    stack.push(left);
-    stackPointer++;
-    stack.push(right);
-    stackPointer++;
+    while (stack.length) {
+        const r = stack.pop() || 0;
+        const l = stack.pop() || 0;
 
-    while (stackPointer > 0) {
-        // @ts-expect-error
-        const r = stack.pop();
-        stackPointer--;
-        const l = stack.pop();
-        stackPointer--;
+        if (r - l <= nodeSize && Math.floor(l / nodeSize) >= Math.floor(r / nodeSize)) continue;
 
-        // @ts-expect-error
-        if ((r - l) <= nodeSize) {
-            // @ts-expect-error
-            if (Math.floor(l / nodeSize) >= Math.floor(r / nodeSize)) continue;
-        }
-
-        // @ts-expect-error
         const pivot = getPivot(values, l, r);
 
-        // @ts-expect-error
         let i = l - 1;
-        // @ts-expect-error
         let j = r + 1;
 
         while (true) {
@@ -386,33 +370,21 @@ function sort(values, boxes, indices, left, right, nodeSize) {
         }
 
         stack.push(l, j, j + 1, r);
-        stackPointer += 4;
     }
 }
 
 /**
- * Determine pivot value.
+ * Determine pivot value using median of three method.
  * @param {Uint32Array} values
  * @param {number} l
  * @param {number} r
  */
 function getPivot(values, l, r) {
-    // apply median of three method
-    const start = values[l];
-    const mid = values[(l + r) >> 1];
-    const end = values[r];
-
-    let pivot = end;
-
-    const x = Math.max(start, mid);
-    if (end > x) {
-        pivot = x;
-    } else if (x === start) {
-        pivot = Math.max(mid, end);
-    } else if (x === mid) {
-        pivot = Math.max(start, end);
-    }
-    return pivot;
+    const a = values[l];
+    const b = values[(l + r) >> 1];
+    const c = values[r];
+    return ((a > b) !== (a > c)) ? a :
+        ((b < a) !== (b < c)) ? b : c;
 }
 
 /**
