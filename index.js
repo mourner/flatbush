@@ -361,7 +361,6 @@ function sort(values, boxes, indices, left, right, nodeSize) {
         // @ts-expect-error
         const r = stack.pop();
         stackPointer--;
-        // @ts-expect-error
         const l = stack.pop();
         stackPointer--;
 
