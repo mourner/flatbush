@@ -358,16 +358,25 @@ function sort(values, boxes, indices, left, right, nodeSize) {
     stackPointer++;
 
     while (stackPointer > 0) {
+        // @ts-expect-error
         const r = stack.pop();
         stackPointer--;
+        // @ts-expect-error
         const l = stack.pop();
         stackPointer--;
 
-        if (Math.floor(l / nodeSize) >= Math.floor(r / nodeSize)) continue;
+        // @ts-expect-error
+        if ((r - l) <= nodeSize) {
+            // @ts-expect-error
+            if (Math.floor(l / nodeSize) >= Math.floor(r / nodeSize)) continue;
+        }
 
+        // @ts-expect-error
         const pivot = getPivot(values, l, r);
 
+        // @ts-expect-error
         let i = l - 1;
+        // @ts-expect-error
         let j = r + 1;
 
         while (true) {
