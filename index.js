@@ -230,13 +230,13 @@ export default class Flatbush {
             // search through child nodes
             for (let /** @type number */ pos = nodeIndex, boxes = this._boxes; pos < end; pos += 4) {
                 // check if node bbox intersects with query bbox
-                const x0 = this._boxes[pos];
+                const x0 = boxes[pos];
                 if (maxX < x0) continue;
-                const y0 = this._boxes[pos + 1];
+                const y0 = boxes[pos + 1];
                 if (maxY < y0) continue;
-                const x1 = this._boxes[pos + 2];
+                const x1 = boxes[pos + 2];
                 if (minX > x1) continue;
-                const y1 = this._boxes[pos + 3];
+                const y1 = boxes[pos + 3];
                 if (minY > y1) continue;
 
                 const index = this._indices[pos >> 2] | 0;
