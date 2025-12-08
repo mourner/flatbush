@@ -81,7 +81,9 @@ export default class Flatbush {
 
         if (data) {
             this.data = data;
+            // @ts-expect-error TS can't handle SharedArraBuffer overloads
             this._boxes = new ArrayType(data, byteOffset + 8, numNodes * 4);
+            // @ts-expect-error TS can't handle SharedArraBuffer overloads
             this._indices = new this.IndexArrayType(data, byteOffset + 8 + nodesByteSize, numNodes);
 
             this._pos = numNodes * 4;
@@ -92,7 +94,9 @@ export default class Flatbush {
 
         } else {
             const data = this.data = new ArrayBufferType(8 + nodesByteSize + numNodes * this.IndexArrayType.BYTES_PER_ELEMENT);
+            // @ts-expect-error TS can't handle SharedArraBuffer overloads
             this._boxes = new ArrayType(data, 8, numNodes * 4);
+            // @ts-expect-error TS can't handle SharedArraBuffer overloads
             this._indices = new this.IndexArrayType(data, 8 + nodesByteSize, numNodes);
             this._pos = 0;
             this.minX = Infinity;
@@ -206,7 +210,7 @@ export default class Flatbush {
      * @param {number} minY
      * @param {number} maxX
      * @param {number} maxY
-     * @param {(index: number) => boolean} [filterFn] An optional function for filtering the results.
+     * @param {(index: number, x0: number, y0: number, x1: number, y1: number) => boolean} [filterFn] An optional function that is called on every found item; if supplied, only items for which this function returns true will be included in the results array.
      * @returns {number[]} An array of indices of items intersecting or touching the given bounding box.
      */
     search(minX, minY, maxX, maxY, filterFn) {
@@ -226,21 +230,25 @@ export default class Flatbush {
             // search through child nodes
             for (let /** @type number */ pos = nodeIndex, boxes = this._boxes; pos < end; pos += 4) {
                 // check if node bbox intersects with query bbox
-                if (maxX < boxes[pos]) continue; // maxX < nodeMinX
-                if (maxY < boxes[pos + 1]) continue; // maxY < nodeMinY
-                if (minX > boxes[pos + 2]) continue; // minX > nodeMaxX
-                if (minY > boxes[pos + 3]) continue; // minY > nodeMaxY
+                const x0 = this._boxes[pos];
+                if (maxX < x0) continue;
+                const y0 = this._boxes[pos + 1];
+                if (maxY < y0) continue;
+                const x1 = this._boxes[pos + 2];
+                if (minX > x1) continue;
+                const y1 = this._boxes[pos + 3];
+                if (minY > y1) continue;
 
                 const index = this._indices[pos >> 2] | 0;
 
                 if (nodeIndex >= this.numItems * 4) {
                     // check if node bbox is completely inside query bbox
-                    if (minX <= boxes[pos] && minY <= boxes[pos + 1] && maxX >= boxes[pos + 2] && maxY >= boxes[pos + 3]) {
+                    if (minX <= x0 && minY <= y0 && maxX >= x1 && maxY >= y1) {
                         addAllLeavesOfNode(results, pos, this.numItems, this._indices, this.nodeSize, this._levelBounds, filterFn);
                     } else {
                         queue.push(index); // node; add it to the search queue
                     }
-                } else if (filterFn === undefined || filterFn(index)) {
+                } else if (filterFn === undefined || filterFn(index, x0, y0, x1, y1)) {
                     results.push(index); // leaf item
                 }
             }
@@ -375,21 +383,32 @@ function upperBound(value, arr) {
  * @param {number} nodeSize
  */
 function sort(values, boxes, indices, left, right, nodeSize) {
-    if (Math.floor(left / nodeSize) >= Math.floor(right / nodeSize)) return;
+    const stack = [left, right];
 
-    const pivot = values[(left + right) >> 1];
-    let i = left - 1;
-    let j = right + 1;
+    while (stack.length) {
+        const r = stack.pop() || 0;
+        const l = stack.pop() || 0;
 
-    while (true) {
-        do i++; while (values[i] < pivot);
-        do j--; while (values[j] > pivot);
-        if (i >= j) break;
-        swap(values, boxes, indices, i, j);
+        if (r - l <= nodeSize && Math.floor(l / nodeSize) >= Math.floor(r / nodeSize)) continue;
+
+        const a = values[l];
+        const b = values[(l + r) >> 1];
+        const c = values[r];
+        const pivot = ((a > b) !== (a > c)) ? a :
+            ((b < a) !== (b < c)) ? b : c;
+
+        let i = l - 1;
+        let j = r + 1;
+
+        while (true) {
+            do i++; while (values[i] < pivot);
+            do j--; while (values[j] > pivot);
+            if (i >= j) break;
+            swap(values, boxes, indices, i, j);
+        }
+
+        stack.push(l, j, j + 1, r);
     }
-
-    sort(values, boxes, indices, left, j, nodeSize);
-    sort(values, boxes, indices, j + 1, right, nodeSize);
 }
 
 /**

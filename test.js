@@ -222,4 +222,63 @@ test('reconstructs an index from SharedArrayBuffer', () => {
     assert.deepEqual(index, index2);
 });
 
+test('quicksort should work with an inbalanced dataset', () => {
+    const n = 15000;
+    const index = new Flatbush(2 * n);
+
+    function linspace(start, stop, num, endpoint = true) {
+        const div = endpoint ? (num - 1) : num;
+        const step = (stop - start) / div;
+        return Array.from({length: num}, (_, i) => start + step * i);
+    }
+
+    const items = linspace(0, 1000, n);
+    const items2 = linspace(0, 1000, n);
+
+    for (const p of items) {
+        index.add(p, 0, p, 0);
+    }
+
+    for (const p of items2) {
+        index.add(p, 0, p, 0);
+    }
+
+    index.finish();
+
+    assert.doesNotThrow(() => {
+        index.search(-100, -1, 15000, 1);
+    });
+});
+
+test('quicksort should work with duplicates', () => {
+    const n = 55000 + 5500 + 7700;
+    const index = new Flatbush(n);
+
+    let x = 0;
+
+    for (let p = 0; p < 55000; p++) {
+        index.add(x, 3.0, x, 3.0);
+        x++;
+    }
+
+    for (let p = 0; p < 5500; p++) {
+        index.add(x, 4.0, x, 4.0);
+        x++;
+    }
+
+    for (let p = 0; p < 7700; p++) {
+        index.add(x, 5.0, x, 5.0);
+        x++;
+    }
+
+    index.finish();
+
+    assert.doesNotThrow(() => {
+        index.search(0.5, -1, 6.5, 1);
+    });
+});
+
+
+
+
 function compare(a, b) { return a - b; }
