@@ -244,7 +244,7 @@ export default class Flatbush {
                 if (nodeIndex >= this.numItems * 4) {
                     // check if node bbox is completely inside query bbox
                     if (minX <= x0 && minY <= y0 && maxX >= x1 && maxY >= y1) {
-                        addAllLeavesOfNode(results, pos, this.numItems, this._indices, this.nodeSize, this._levelBounds, filterFn);
+                        addAllLeavesOfNode(results, pos, this.numItems, this._indices, this.nodeSize, this._levelBounds, boxes, filterFn);
                     } else {
                         queue.push(index); // node; add it to the search queue
                     }
@@ -332,10 +332,11 @@ export default class Flatbush {
  * @param {Uint16Array<ArrayBuffer> | Uint32Array<ArrayBuffer>} indices
  * @param {number} nodeSize
  * @param {number[]} levelBounds
+ * @param {number[]} boxes
  * @param {(index: number) => boolean} [filterFn] An optional function for filtering the results.
  * @returns {void}
  */
-function addAllLeavesOfNode(results, pos, numItems, indices, nodeSize, levelBounds, filterFn) {
+function addAllLeavesOfNode(results, pos, numItems, indices, nodeSize, levelBounds, boxes, filterFn) {
     let posStart = pos;
     let posEnd = pos;
 
@@ -348,7 +349,7 @@ function addAllLeavesOfNode(results, pos, numItems, indices, nodeSize, levelBoun
 
     for (let /** @type number */ leafPos = posStart; leafPos <= posEnd; leafPos += 4) {
         const leafIndex = indices[leafPos >> 2];
-        if (filterFn === undefined || filterFn(leafIndex)) {
+        if (filterFn === undefined || filterFn(leafIndex, boxes[leafPos], boxes[leafPos + 1], boxes[leafPos + 2], boxes[leafPos + 3])) {
             results.push(leafIndex); // leaf item
         }
     }
