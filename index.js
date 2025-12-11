@@ -332,8 +332,8 @@ export default class Flatbush {
  * @param {Uint16Array<ArrayBuffer> | Uint32Array<ArrayBuffer>} indices
  * @param {number} nodeSize
  * @param {number[]} levelBounds
- * @param {number[]} boxes
- * @param {(index: number) => boolean} [filterFn] An optional function for filtering the results.
+ * @param {InstanceType<TypedArrayConstructor>} boxes
+ * @param {(index: number, x0: number, y0: number, x1: number, y1: number) => boolean} [filterFn] An optional function for filtering the results.
  * @returns {void}
  */
 function addAllLeavesOfNode(results, pos, numItems, indices, nodeSize, levelBounds, boxes, filterFn) {
