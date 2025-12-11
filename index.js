@@ -228,22 +228,26 @@ export default class Flatbush {
             const end = Math.min(nodeIndex + this.nodeSize * 4, upperBound(nodeIndex, this._levelBounds));
 
             // search through child nodes
-            for (let /** @type number */ pos = nodeIndex; pos < end; pos += 4) {
+            for (let /** @type number */ pos = nodeIndex, boxes = this._boxes; pos < end; pos += 4) {
                 // check if node bbox intersects with query bbox
-                const x0 = this._boxes[pos];
+                const x0 = boxes[pos];
                 if (maxX < x0) continue;
-                const y0 = this._boxes[pos + 1];
+                const y0 = boxes[pos + 1];
                 if (maxY < y0) continue;
-                const x1 = this._boxes[pos + 2];
+                const x1 = boxes[pos + 2];
                 if (minX > x1) continue;
-                const y1 = this._boxes[pos + 3];
+                const y1 = boxes[pos + 3];
                 if (minY > y1) continue;
 
                 const index = this._indices[pos >> 2] | 0;
 
                 if (nodeIndex >= this.numItems * 4) {
-                    queue.push(index); // node; add it to the search queue
-
+                    // check if node bbox is completely inside query bbox
+                    if (minX <= x0 && minY <= y0 && maxX >= x1 && maxY >= y1) {
+                        addAllLeavesOfNode(results, pos, this.numItems, this._indices, this.nodeSize, this._levelBounds, boxes, filterFn);
+                    } else {
+                        queue.push(index); // node; add it to the search queue
+                    }
                 } else if (filterFn === undefined || filterFn(index, x0, y0, x1, y1)) {
                     results.push(index); // leaf item
                 }
@@ -317,6 +321,37 @@ export default class Flatbush {
 
         q.clear();
         return results;
+    }
+}
+
+/**
+ * Add all leaves of a node to the search result.
+ * @param {number[]} results
+ * @param {number} pos
+ * @param {number} numItems
+ * @param {Uint16Array<ArrayBuffer> | Uint32Array<ArrayBuffer>} indices
+ * @param {number} nodeSize
+ * @param {number[]} levelBounds
+ * @param {InstanceType<TypedArrayConstructor>} boxes
+ * @param {(index: number, x0: number, y0: number, x1: number, y1: number) => boolean} [filterFn] An optional function for filtering the results.
+ * @returns {void}
+ */
+function addAllLeavesOfNode(results, pos, numItems, indices, nodeSize, levelBounds, boxes, filterFn) {
+    let posStart = pos;
+    let posEnd = pos;
+
+    // depth search while not leaf
+    while (posStart >= numItems * 4) {
+        posStart = indices[posStart >> 2] | 0;
+        const posEndStart = indices[posEnd >> 2] | 0;
+        posEnd = Math.min(posEndStart + nodeSize * 4, upperBound(posEndStart, levelBounds)) - 4;
+    }
+
+    for (let /** @type number */ leafPos = posStart; leafPos <= posEnd; leafPos += 4) {
+        const leafIndex = indices[leafPos >> 2];
+        if (filterFn === undefined || filterFn(leafIndex, boxes[leafPos], boxes[leafPos + 1], boxes[leafPos + 2], boxes[leafPos + 3])) {
+            results.push(leafIndex); // leaf item
+        }
     }
 }
 
