@@ -258,12 +258,39 @@ export default class Flatbush {
             if (nodeIndex >= this.numItems * 4) {
                 // check if node bbox is completely inside query bbox
                 if (minX <= x0 && minY <= y0 && maxX >= x1 && maxY >= y1) {
-                    addAllLeavesOfNode(results, pos, this.numItems, this._indices, this.nodeSize, this._levelBounds, boxes, filterFn);
+                    //addAllLeavesOfNode(results, pos, this.numItems, this._indices, this.nodeSize, this._levelBounds, boxes, filterFn);
+                    this._addAllLeavesOfNode(results, pos, filterFn);
                 } else {
                     this._searchRecursive(minX, minY, maxX, maxY, results, index, filterFn);
                 }
             } else if (filterFn === undefined || filterFn(index, x0, y0, x1, y1)) {
                 results.push(index); // leaf item
+            }
+        }
+    }
+
+    /**
+     * Add all leaves of a node to the search result.
+     * @param {number[]} results
+     * @param {number} pos
+     * @param {(index: number, x0: number, y0: number, x1: number, y1: number) => boolean} [filterFn] An optional function for filtering the results.
+     * @returns {void}
+     */
+    _addAllLeavesOfNode(results, pos, filterFn) {
+        let posStart = pos;
+        let posEnd = pos;
+
+        // depth search while not leaf
+        while (posStart >= this.numItems * 4) {
+            posStart = this._indices[posStart >> 2] | 0;
+            const posEndStart = this._indices[posEnd >> 2] | 0;
+            posEnd = Math.min(posEndStart + this.nodeSize * 4, upperBound(posEndStart, this._levelBounds)) - 4;
+        }
+
+        for (let /** @type number */ leafPos = posStart; leafPos <= posEnd; leafPos += 4) {
+            const leafIndex = this._indices[leafPos >> 2];
+            if (filterFn === undefined || filterFn(leafIndex, this._boxes[leafPos], this._boxes[leafPos + 1], this._boxes[leafPos + 2], this._boxes[leafPos + 3])) {
+                results.push(leafIndex); // leaf item
             }
         }
     }
@@ -330,37 +357,6 @@ export default class Flatbush {
 
         q.clear();
         return results;
-    }
-}
-
-/**
- * Add all leaves of a node to the search result.
- * @param {number[]} results
- * @param {number} pos
- * @param {number} numItems
- * @param {Uint16Array<ArrayBuffer> | Uint32Array<ArrayBuffer>} indices
- * @param {number} nodeSize
- * @param {number[]} levelBounds
- * @param {InstanceType<TypedArrayConstructor>} boxes
- * @param {(index: number, x0: number, y0: number, x1: number, y1: number) => boolean} [filterFn] An optional function for filtering the results.
- * @returns {void}
- */
-function addAllLeavesOfNode(results, pos, numItems, indices, nodeSize, levelBounds, boxes, filterFn) {
-    let posStart = pos;
-    let posEnd = pos;
-
-    // depth search while not leaf
-    while (posStart >= numItems * 4) {
-        posStart = indices[posStart >> 2] | 0;
-        const posEndStart = indices[posEnd >> 2] | 0;
-        posEnd = Math.min(posEndStart + nodeSize * 4, upperBound(posEndStart, levelBounds)) - 4;
-    }
-
-    for (let /** @type number */ leafPos = posStart; leafPos <= posEnd; leafPos += 4) {
-        const leafIndex = indices[leafPos >> 2];
-        if (filterFn === undefined || filterFn(leafIndex, boxes[leafPos], boxes[leafPos + 1], boxes[leafPos + 2], boxes[leafPos + 3])) {
-            results.push(leafIndex); // leaf item
-        }
     }
 }
 
