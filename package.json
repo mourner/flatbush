@@ -13,7 +13,7 @@
   "scripts": {
     "pretest": "eslint index.js test.js bench.js",
     "test": "tsc && node --test",
-    "build": "rollup index.js -o flatbush.js -n Flatbush -f umd -p node-resolve",
+    "build": "rolldown index.js -o flatbush.js -n Flatbush -f umd",
     "prepublishOnly": "tsc && npm run build"
   },
   "files": [
@@ -38,12 +38,11 @@
   },
   "devDependencies": {
     "@e18e/eslint-plugin": "^0.2.0",
-    "@rollup/plugin-node-resolve": "^16.0.3",
-    "eslint": "^10.0.1",
+    "eslint": "^10.0.3",
     "eslint-config-mourner": "^4.1.0",
     "rbush": "^4.0.1",
     "rbush-knn": "^4.0.0",
-    "rollup": "^4.59.0",
+    "rolldown": "^1.0.0-rc.9",
     "typescript": "^5.9.3"
   }
 }
