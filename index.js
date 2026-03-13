@@ -219,40 +219,80 @@ export default class Flatbush {
         }
 
         /** @type number | undefined */
-        let nodeIndex = this._boxes.length - 4;
-        const queue = [];
+        const nodeIndex = this._boxes.length - 4;
+        /** @type number[] | undefined */
         const results = [];
 
-        while (nodeIndex !== undefined) {
-            // find the end index of the node
-            const end = Math.min(nodeIndex + this.nodeSize * 4, upperBound(nodeIndex, this._levelBounds));
+        this._searchRecursive(minX, minY, maxX, maxY, results, nodeIndex, filterFn);
+        return results;
+    }
 
-            // search through child nodes
-            for (let /** @type number */ pos = nodeIndex; pos < end; pos += 4) {
-                // check if node bbox intersects with query bbox
-                const x0 = this._boxes[pos];
-                if (maxX < x0) continue;
-                const y0 = this._boxes[pos + 1];
-                if (maxY < y0) continue;
-                const x1 = this._boxes[pos + 2];
-                if (minX > x1) continue;
-                const y1 = this._boxes[pos + 3];
-                if (minY > y1) continue;
+    /**
+     * Recursive search the index by a bounding box.
+     * @param {number} minX
+     * @param {number} minY
+     * @param {number} maxX
+     * @param {number} maxY
+     * @param {number[]} results
+     * @param {number} nodeIndex
+     * @param {(index: number, x0: number, y0: number, x1: number, y1: number) => boolean} [filterFn] An optional function that is called on every found item; if supplied, only items for which this function returns true will be included in the results array.
+     * @returns {void}
+     */
+    _searchRecursive(minX, minY, maxX, maxY, results, nodeIndex, filterFn) {
+        const end = Math.min(nodeIndex + this.nodeSize * 4, upperBound(nodeIndex, this._levelBounds));
 
-                const index = this._indices[pos >> 2] | 0;
+        // search through child nodes
+        for (let /** @type number */ pos = nodeIndex, boxes = this._boxes; pos < end; pos += 4) {
+            // check if node bbox intersects with query bbox
+            const x0 = boxes[pos];
+            if (maxX < x0) continue;
+            const y0 = boxes[pos + 1];
+            if (maxY < y0) continue;
+            const x1 = boxes[pos + 2];
+            if (minX > x1) continue;
+            const y1 = boxes[pos + 3];
+            if (minY > y1) continue;
 
-                if (nodeIndex >= this.numItems * 4) {
-                    queue.push(index); // node; add it to the search queue
+            const index = this._indices[pos >> 2] | 0;
 
-                } else if (filterFn === undefined || filterFn(index, x0, y0, x1, y1)) {
-                    results.push(index); // leaf item
+            if (nodeIndex >= this.numItems * 4) {
+                // check if node bbox is completely inside query bbox
+                if (minX <= x0 && minY <= y0 && maxX >= x1 && maxY >= y1) {
+                    //addAllLeavesOfNode(results, pos, this.numItems, this._indices, this.nodeSize, this._levelBounds, boxes, filterFn);
+                    this._addAllLeavesOfNode(results, pos, filterFn);
+                } else {
+                    this._searchRecursive(minX, minY, maxX, maxY, results, index, filterFn);
                 }
+            } else if (filterFn === undefined || filterFn(index, x0, y0, x1, y1)) {
+                results.push(index); // leaf item
             }
+        }
+    }
 
-            nodeIndex = queue.pop();
+    /**
+     * Add all leaves of a node to the search result.
+     * @param {number[]} results
+     * @param {number} pos
+     * @param {(index: number, x0: number, y0: number, x1: number, y1: number) => boolean} [filterFn] An optional function for filtering the results.
+     * @returns {void}
+     */
+    _addAllLeavesOfNode(results, pos, filterFn) {
+        let posStart = pos;
+        let posEnd = pos;
+
+        // depth search while not leaf
+        while (posStart >= this.numItems * 4) {
+            posStart = this._indices[posStart >> 2] | 0;
+            const posEndStart = this._indices[posEnd >> 2] | 0;
+            posEnd = Math.min(posEndStart + this.nodeSize * 4, upperBound(posEndStart, this._levelBounds)) - 4;
         }
 
-        return results;
+        for (let /** @type number */ leafPos = posStart; leafPos <= posEnd; leafPos += 4) {
+            const leafIndex = this._indices[leafPos >> 2];
+            if (filterFn === undefined || filterFn(leafIndex, this._boxes[leafPos], this._boxes[leafPos + 1], this._boxes[leafPos + 2], this._boxes[leafPos + 3])) {
+                results.push(leafIndex); // leaf item
+            }
+        }
     }
 
     /**
