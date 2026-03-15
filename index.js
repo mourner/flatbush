@@ -258,7 +258,6 @@ export default class Flatbush {
             if (nodeIndex >= this.numItems * 4) {
                 // check if node bbox is completely inside query bbox
                 if (minX <= x0 && minY <= y0 && maxX >= x1 && maxY >= y1) {
-                    //addAllLeavesOfNode(results, pos, this.numItems, this._indices, this.nodeSize, this._levelBounds, boxes, filterFn);
                     this._addAllLeavesOfNode(results, pos, filterFn);
                 } else {
                     this._searchRecursive(minX, minY, maxX, maxY, results, index, filterFn);
