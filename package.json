@@ -38,11 +38,11 @@
   },
   "devDependencies": {
     "@e18e/eslint-plugin": "^0.2.0",
-    "eslint": "^10.0.3",
+    "eslint": "^10.1.0",
     "eslint-config-mourner": "^4.1.0",
     "rbush": "^4.0.1",
     "rbush-knn": "^4.0.0",
-    "rolldown": "^1.0.0-rc.9",
+    "rolldown": "^1.0.0-rc.10",
     "typescript": "^5.9.3"
   }
 }

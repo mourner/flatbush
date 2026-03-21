@@ -4,6 +4,7 @@ const ARRAY_TYPES = [Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint1
 const VERSION = 3; // serialized format version
 
 /** @typedef {Int8ArrayConstructor | Uint8ArrayConstructor | Uint8ClampedArrayConstructor | Int16ArrayConstructor | Uint16ArrayConstructor | Int32ArrayConstructor | Uint32ArrayConstructor | Float32ArrayConstructor | Float64ArrayConstructor} TypedArrayConstructor */
+/** @typedef {Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array} TypedArray */
 
 export default class Flatbush {
 
@@ -18,8 +19,7 @@ export default class Flatbush {
             throw new Error('byteOffset must be 8-byte aligned.');
         }
 
-        // @ts-expect-error duck typing array buffers
-        if (!data || data.byteLength === undefined || data.buffer) {
+        if (!data || data.byteLength === undefined || 'buffer' in data) {
             throw new Error('Data must be an instance of ArrayBuffer or SharedArrayBuffer.');
         }
 
@@ -79,12 +79,15 @@ export default class Flatbush {
             throw new Error(`Unexpected typed array class: ${ArrayType}.`);
         }
 
+        /** @type {new(b: ArrayBufferLike, o: number, l: number) => TypedArray} */
+        const BoxCtor = ArrayType;
+        /** @type {new(b: ArrayBufferLike, o: number, l: number) => Uint16Array | Uint32Array} */
+        const IdxCtor = this.IndexArrayType;
+
         if (data) {
             this.data = data;
-            // @ts-expect-error TS can't handle SharedArraBuffer overloads
-            this._boxes = new ArrayType(data, byteOffset + 8, numNodes * 4);
-            // @ts-expect-error TS can't handle SharedArraBuffer overloads
-            this._indices = new this.IndexArrayType(data, byteOffset + 8 + nodesByteSize, numNodes);
+            this._boxes = new BoxCtor(data, byteOffset + 8, numNodes * 4);
+            this._indices = new IdxCtor(data, byteOffset + 8 + nodesByteSize, numNodes);
 
             this._pos = numNodes * 4;
             this.minX = this._boxes[this._pos - 4];
@@ -94,10 +97,8 @@ export default class Flatbush {
 
         } else {
             const data = this.data = new ArrayBufferType(8 + nodesByteSize + numNodes * this.IndexArrayType.BYTES_PER_ELEMENT);
-            // @ts-expect-error TS can't handle SharedArraBuffer overloads
-            this._boxes = new ArrayType(data, 8, numNodes * 4);
-            // @ts-expect-error TS can't handle SharedArraBuffer overloads
-            this._indices = new this.IndexArrayType(data, 8 + nodesByteSize, numNodes);
+            this._boxes = new BoxCtor(data, 8, numNodes * 4);
+            this._indices = new IdxCtor(data, 8 + nodesByteSize, numNodes);
             this._pos = 0;
             this.minX = Infinity;
             this.minY = Infinity;
@@ -228,7 +229,7 @@ export default class Flatbush {
             const end = Math.min(nodeIndex + this.nodeSize * 4, upperBound(nodeIndex, this._levelBounds));
 
             // search through child nodes
-            for (let /** @type number */ pos = nodeIndex; pos < end; pos += 4) {
+            for (let /** @type {number} */ pos = nodeIndex; pos < end; pos += 4) {
                 // check if node bbox intersects with query bbox
                 const x0 = this._boxes[pos];
                 if (maxX < x0) continue;
@@ -301,18 +302,14 @@ export default class Flatbush {
             }
 
             // pop items from the queue
-            // @ts-expect-error q.length check eliminates undefined values
-            while (q.length && (q.peek() & 1)) {
-                const dist = q.peekValue();
-                // @ts-expect-error
+            while (q.length && (/** @type {number} */(q.peek()) & 1)) {
+                const dist = /** @type {number} */(q.peekValue());
                 if (dist > maxDistSquared) break outer;
-                // @ts-expect-error
-                results.push(q.pop() >> 1);
+                results.push(/** @type {number} */(q.pop()) >> 1);
                 if (results.length === maxResults) break outer;
             }
 
-            // @ts-expect-error
-            nodeIndex = q.length ? q.pop() >> 1 : undefined;
+            nodeIndex = q.length ? /** @type {number} */(q.pop()) >> 1 : undefined;
         }
 
         q.clear();
@@ -342,7 +339,7 @@ function upperBound(value, arr) {
 /**
  * Custom quicksort that partially sorts bbox data alongside the hilbert values.
  * @param {Uint32Array} values
- * @param {InstanceType<TypedArrayConstructor>} boxes
+ * @param {TypedArray} boxes
  * @param {Uint16Array | Uint32Array} indices
  * @param {number} left
  * @param {number} right
@@ -380,7 +377,7 @@ function sort(values, boxes, indices, left, right, nodeSize) {
 /**
  * Swap two values and two corresponding boxes.
  * @param {Uint32Array} values
- * @param {InstanceType<TypedArrayConstructor>} boxes
+ * @param {TypedArray} boxes
  * @param {Uint16Array | Uint32Array} indices
  * @param {number} i
  * @param {number} j
