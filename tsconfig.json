@@ -5,7 +5,7 @@
         "strict": true,
         "emitDeclarationOnly": true,
         "declaration": true,
-        "target": "es2017",
+        "target": "esnext",
         "module": "nodenext",
         "moduleResolution": "nodenext"
     },

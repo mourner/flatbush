@@ -1,6 +1,6 @@
 {
   "name": "flatbush",
-  "version": "4.5.0",
+  "version": "4.5.1",
   "description": "Fast static spatial index for rectangles",
   "author": "Vladimir Agafonkin",
   "license": "ISC",
@@ -13,7 +13,7 @@
   "scripts": {
     "pretest": "eslint index.js test.js bench.js",
     "test": "tsc && node --test",
-    "build": "rollup index.js -o flatbush.js -n Flatbush -f umd -p node-resolve",
+    "build": "rolldown index.js -o flatbush.js -n Flatbush -f umd",
     "prepublishOnly": "tsc && npm run build"
   },
   "files": [
@@ -37,12 +37,12 @@
     "flatqueue": "^3.0.0"
   },
   "devDependencies": {
-    "@rollup/plugin-node-resolve": "^16.0.3",
-    "eslint": "^9.39.0",
+    "@e18e/eslint-plugin": "^0.2.0",
+    "eslint": "^10.1.0",
     "eslint-config-mourner": "^4.1.0",
     "rbush": "^4.0.1",
     "rbush-knn": "^4.0.0",
-    "rollup": "^4.52.5",
+    "rolldown": "^1.0.0-rc.10",
     "typescript": "^5.9.3"
   }
 }
