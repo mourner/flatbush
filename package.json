@@ -42,6 +42,7 @@
     "eslint-config-mourner": "^5.0.1",
     "rbush": "^4.0.1",
     "rbush-knn": "^4.0.0",
+    "rolldown": "^1.1.0",
     "typescript": "^6.0.3"
   }
 }
