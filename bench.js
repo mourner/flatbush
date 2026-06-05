@@ -1,35 +1,67 @@
 
 import Flatbush from './index.js';
-import RBush from 'rbush';
-import rbushKNN from 'rbush-knn';
 
 const N = 1000000;
-const K = 1000;
 const nodeSize = 16;
+const REPS = 10; // repetitions per search benchmark
 
 console.log(`${N} rectangles`);
 console.log(`node size: ${nodeSize}`);
+console.log(`reps: ${REPS}`);
 console.log('');
 
+// Seeded PRNG (mulberry32) so data & queries are identical across process runs,
+// making before/after comparisons of an optimization meaningful.
+function mulberry32(seed) {
+    return function () {
+        seed |= 0;
+        seed = (seed + 0x6D2B79F5) | 0;
+        let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+}
+const random = mulberry32(0x9e3779b9);
+
 function addRandomBox(arr, boxSize) {
-    const x = Math.random() * (100 - boxSize);
-    const y = Math.random() * (100 - boxSize);
-    const x2 = x + Math.random() * boxSize;
-    const y2 = y + Math.random() * boxSize;
+    const x = random() * (100 - boxSize);
+    const y = random() * (100 - boxSize);
+    const x2 = x + random() * boxSize;
+    const y2 = y + random() * boxSize;
     arr.push(x, y, x2, y2);
+}
+
+// generate `count` query boxes each covering a fixed fraction of the 100x100 space
+function makeQueryBoxes(area, count) {
+    const boxSize = 100 * Math.sqrt(area);
+    const boxes = [];
+    for (let i = 0; i < count; i++) {
+        const x = random() * (100 - boxSize);
+        const y = random() * (100 - boxSize);
+        boxes.push(x, y, x + boxSize, y + boxSize);
+    }
+    return boxes;
+}
+
+// min + mean±std over an array of timings (ms)
+function stats(times) {
+    const n = times.length;
+    const min = Math.min(...times);
+    const mean = times.reduce((a, b) => a + b, 0) / n;
+    const std = Math.sqrt(times.reduce((a, b) => a + (b - mean) ** 2, 0) / n);
+    return `min ${min.toFixed(2)}ms, mean ${mean.toFixed(2)}±${std.toFixed(2)}ms`;
 }
 
 const coords = [];
 for (let i = 0; i < N; i++) addRandomBox(coords, 1);
 
-const boxes100 = [];
-const boxes10 = [];
-const boxes1 = [];
-for (let i = 0; i < K; i++) {
-    addRandomBox(boxes100, 100 * Math.sqrt(0.1));
-    addRandomBox(boxes10, 10);
-    addRandomBox(boxes1, 1);
-}
+// query sets scaled so each test does comparable total work (count ~ 1/area)
+const searchTests = [
+    {name: '10%', area: 0.1, count: 100},
+    {name: '1%', area: 0.01, count: 1000},
+    {name: '0.1%', area: 0.001, count: 10000},
+];
+for (const t of searchTests) t.boxes = makeQueryBoxes(t.area, t.count);
 
 console.time('flatbush');
 const index = new Flatbush(N, nodeSize);
@@ -45,82 +77,45 @@ console.timeEnd('flatbush');
 
 console.log(`index size: ${index.data.byteLength.toLocaleString()}`);
 
-function benchSearch(boxes, name, warmup) {
-    const id = `${K} searches ${name}`;
-    if (!warmup) console.time(id);
+// accumulator to prevent dead-code elimination of search results
+let sink = 0;
+
+function benchSearch(boxes, name, count) {
+    // warmup
     for (let i = 0; i < boxes.length; i += 4) {
-        index.search(boxes[i], boxes[i + 1], boxes[i + 2], boxes[i + 3]);
+        sink += index.search(boxes[i], boxes[i + 1], boxes[i + 2], boxes[i + 3]).length;
     }
-    if (!warmup) console.timeEnd(id);
+    const times = [];
+    for (let r = 0; r < REPS; r++) {
+        const start = performance.now();
+        for (let i = 0; i < boxes.length; i += 4) {
+            sink += index.search(boxes[i], boxes[i + 1], boxes[i + 2], boxes[i + 3]).length;
+        }
+        times.push(performance.now() - start);
+    }
+    console.log(`${count} searches ${name}: ${stats(times)}`);
 }
 
-function benchNeighbors(K, M, warmup) {
-    const id = `${K} searches of ${M} neighbors`;
-    if (!warmup) console.time(id);
-    for (let i = 0; i < K; i++) {
-        index.neighbors(coords[4 * i], coords[4 * i + 1], M);
+function benchNeighbors(Ksearch, M) {
+    // warmup
+    for (let i = 0; i < Ksearch; i++) {
+        sink += index.neighbors(coords[4 * i], coords[4 * i + 1], M).length;
     }
-    if (!warmup) console.timeEnd(id);
+    const times = [];
+    for (let r = 0; r < REPS; r++) {
+        const start = performance.now();
+        for (let i = 0; i < Ksearch; i++) {
+            sink += index.neighbors(coords[4 * i], coords[4 * i + 1], M).length;
+        }
+        times.push(performance.now() - start);
+    }
+    console.log(`${Ksearch} searches of ${M} neighbors: ${stats(times)}`);
 }
 
-benchSearch(boxes1, '0.01%', true);
-benchSearch(boxes100, '10%');
-benchSearch(boxes10, '1%');
-benchSearch(boxes1, '0.01%');
+for (const t of searchTests) benchSearch(t.boxes, t.name, t.count);
 
-benchNeighbors(K, 1, true);
-benchNeighbors(K, 100);
+benchNeighbors(1000, 100);
 benchNeighbors(1, N);
-benchNeighbors(N / 10, 1);
+benchNeighbors(10000, 1);
 
-const dataForRbush = [];
-for (let i = 0; i < coords.length; i += 4) {
-    dataForRbush.push({
-        minX: coords[i],
-        minY: coords[i + 1],
-        maxX: coords[i + 2],
-        maxY: coords[i + 3]
-    });
-}
-
-console.log('');
-console.time('rbush');
-const rbushIndex = new RBush(nodeSize).load(dataForRbush);
-console.timeEnd('rbush');
-
-function benchSearchRBush(boxes, name, warmup) {
-    const boxes2 = [];
-    for (let i = 0; i < boxes.length; i += 4) {
-        boxes2.push({
-            minX: boxes[i],
-            minY: boxes[i + 1],
-            maxX: boxes[i + 2],
-            maxY: boxes[i + 3]
-        });
-    }
-    const id = `${K} searches ${name}`;
-    if (!warmup) console.time(id);
-    for (let i = 0; i < boxes2.length; i++) {
-        rbushIndex.search(boxes2[i]);
-    }
-    if (!warmup) console.timeEnd(id);
-}
-
-function benchNeighborsRBush(K, M, warmup) {
-    const id = `${K} searches of ${M} neighbors`;
-    if (!warmup) console.time(id);
-    for (let i = 0; i < K; i++) {
-        rbushKNN(rbushIndex, coords[4 * i], coords[4 * i + 1], M);
-    }
-    if (!warmup) console.timeEnd(id);
-}
-
-benchSearchRBush(boxes1, '0.01%', true);
-benchSearchRBush(boxes100, '10%');
-benchSearchRBush(boxes10, '1%');
-benchSearchRBush(boxes1, '0.01%');
-
-benchNeighborsRBush(K, 1, true);
-benchNeighborsRBush(K, 100);
-benchNeighborsRBush(1, N);
-benchNeighborsRBush(N / 10, 1);
+if (sink < 0) console.log(sink); // keep sink observable
