@@ -227,37 +227,80 @@ export default class Flatbush {
         const q = [];
         const results = [];
 
+        let contained = false; // whether the current node's bbox is fully inside the query
+
         while (nodeIndex !== undefined) {
             // find the end index of the node, capped at the level boundary
             const end = Math.min(nodeIndex + nodeSize * 4, levelBounds[level]);
+            const isNode = nodeIndex >= numItems4;
 
-            // search through child nodes
-            for (let /** @type {number} */ pos = nodeIndex; pos < end; pos += 4) {
-                // check if node bbox intersects with query bbox
-                const x0 = boxes[pos];
-                if (maxX < x0) continue;
-                const y0 = boxes[pos + 1];
-                if (maxY < y0) continue;
-                const x1 = boxes[pos + 2];
-                if (minX > x1) continue;
-                const y1 = boxes[pos + 3];
-                if (minY > y1) continue;
+            if (contained) {
+                this._collectContained(nodeIndex, end, level, isNode, q, results, filterFn);
 
-                const index = indices[pos >> 2] | 0;
+            } else {
+                // search through child nodes
+                for (let /** @type {number} */ pos = nodeIndex; pos < end; pos += 4) {
+                    // check if node bbox intersects with query bbox
+                    const x0 = boxes[pos];
+                    if (maxX < x0) continue;
+                    const y0 = boxes[pos + 1];
+                    if (maxY < y0) continue;
+                    const x1 = boxes[pos + 2];
+                    if (minX > x1) continue;
+                    const y1 = boxes[pos + 3];
+                    if (minY > y1) continue;
 
-                if (nodeIndex >= numItems4) {
-                    q.push(index, level - 1); // node; add it and its level to the search queue
+                    const index = indices[pos >> 2] | 0;
 
-                } else if (filterFn === undefined || filterFn(index, x0, y0, x1, y1)) {
-                    results.push(index); // leaf item
+                    if (isNode) {
+                        // node intersects; flag it as contained if its bbox is fully inside the query
+                        const c = +(minX <= x0 && minY <= y0 && maxX >= x1 && maxY >= y1);
+                        q.push(index | c, level - 1); // node; add it and its level to the search queue
+
+                    } else if (filterFn === undefined || filterFn(index, x0, y0, x1, y1)) {
+                        results.push(index); // leaf item
+                    }
                 }
             }
 
             level = /** @type {number} */ (q.pop());
             nodeIndex = q.pop();
+            if (nodeIndex !== undefined) {
+                contained = (nodeIndex & 1) === 1;
+                nodeIndex &= ~1;
+            }
         }
 
         return results;
+    }
+
+    /**
+     * Collect children of a node whose bbox is fully inside the query, skipping intersection tests.
+     * @param {number} nodeIndex
+     * @param {number} end
+     * @param {number} level
+     * @param {boolean} isNode whether the children are tree nodes (vs leaf items)
+     * @param {number[]} q the traversal queue
+     * @param {number[]} results
+     * @param {((index: number, x0: number, y0: number, x1: number, y1: number) => boolean) | undefined} filterFn
+     */
+    _collectContained(nodeIndex, end, level, isNode, q, results, filterFn) {
+        const boxes = this._boxes;
+        const indices = this._indices;
+        if (isNode) {
+            // all children are contained too, so enqueue them flagged without intersection tests
+            for (let pos = nodeIndex; pos < end; pos += 4) {
+                q.push(indices[pos >> 2] | 1, level - 1); // contained node (LSB flag; `| 1` also coerces to int)
+            }
+        } else {
+            // leaf level: every leaf matches, only the filter can exclude it
+            for (let pos = nodeIndex; pos < end; pos += 4) {
+                const index = indices[pos >> 2] | 0;
+                if (filterFn === undefined || filterFn(index, boxes[pos], boxes[pos + 1], boxes[pos + 2], boxes[pos + 3])) {
+                    results.push(index);
+                }
+            }
+        }
     }
 
     /**
