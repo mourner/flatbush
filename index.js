@@ -158,7 +158,7 @@ export default class Flatbush {
 
         const width = (this.maxX - this.minX) || 1;
         const height = (this.maxY - this.minY) || 1;
-        const hilbertValues = new Uint32Array(this.numItems);
+        const hilbertValues = new Int32Array(this.numItems);
         const hilbertMax = (1 << 16) - 1;
 
         // map item centers into Hilbert coordinate space and calculate Hilbert values
@@ -338,7 +338,7 @@ function upperBound(value, arr) {
 
 /**
  * Custom quicksort that partially sorts bbox data alongside the hilbert values.
- * @param {Uint32Array} values
+ * @param {Int32Array} values
  * @param {TypedArray} boxes
  * @param {Uint16Array | Uint32Array} indices
  * @param {number} left
@@ -376,7 +376,7 @@ function sort(values, boxes, indices, left, right, nodeSize) {
 
 /**
  * Swap two values and two corresponding boxes.
- * @param {Uint32Array} values
+ * @param {Int32Array} values
  * @param {TypedArray} boxes
  * @param {Uint16Array | Uint32Array} indices
  * @param {number} i
@@ -453,5 +453,6 @@ function hilbert(x, y) {
     b = (b | (b << 2)) & 0x33333333;
     b = (b | (b << 1)) & 0x55555555;
 
-    return ((b << 1) | a) >>> 0;
+    // shift into signed SMI range for performance
+    return (((b << 1) | a) >>> 0) - 0x80000000;
 }

@@ -7,8 +7,7 @@ const REPS = 10; // repetitions per search benchmark
 
 console.log(`${N} rectangles`);
 console.log(`node size: ${nodeSize}`);
-console.log(`reps: ${REPS}`);
-console.log('');
+console.log(`runs: ${REPS}`);
 
 // Seeded PRNG (mulberry32) so data & queries are identical across process runs,
 // making before/after comparisons of an optimization meaningful.
@@ -63,19 +62,33 @@ const searchTests = [
 ];
 for (const t of searchTests) t.boxes = makeQueryBoxes(t.area, t.count);
 
-console.time('flatbush');
-const index = new Flatbush(N, nodeSize);
-for (let i = 0; i < coords.length; i += 4) {
-    index.add(
-        coords[i],
-        coords[i + 1],
-        coords[i + 2],
-        coords[i + 3]);
+function buildIndex() {
+    const index = new Flatbush(N, nodeSize);
+    for (let i = 0; i < coords.length; i += 4) {
+        index.add(
+            coords[i],
+            coords[i + 1],
+            coords[i + 2],
+            coords[i + 3]);
+    }
+    index.finish();
+    return index;
 }
-index.finish();
-console.timeEnd('flatbush');
 
-console.log(`index size: ${index.data.byteLength.toLocaleString()}`);
+const index = buildIndex();
+console.log(`index size: ${index.data.byteLength.toLocaleString()} bytes`);
+
+function benchIndex() {
+    const times = [];
+    // warmed up above
+    for (let r = 0; r < REPS; r++) {
+        const start = performance.now();
+        buildIndex();
+        times.push(performance.now() - start);
+    }
+    console.log(`index: ${stats(times)}`);
+}
+benchIndex();
 
 // accumulator to prevent dead-code elimination of search results
 let sink = 0;
