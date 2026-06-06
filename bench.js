@@ -5,9 +5,7 @@ const N = 1000000;
 const nodeSize = 16;
 const REPS = 10; // repetitions per search benchmark
 
-console.log(`${N} rectangles`);
-console.log(`node size: ${nodeSize}`);
-console.log(`runs: ${REPS}`);
+console.log(`node size: ${nodeSize}; runs: ${REPS}`);
 
 // Seeded PRNG (mulberry32) so data & queries are identical across process runs,
 // making before/after comparisons of an optimization meaningful.
@@ -42,13 +40,20 @@ function makeQueryBoxes(area, count) {
     return boxes;
 }
 
-// min + mean±std over an array of timings (ms)
+// min + mean±std over an array of timings (ms), padded for column alignment
 function stats(times) {
     const n = times.length;
     const min = Math.min(...times);
     const mean = times.reduce((a, b) => a + b, 0) / n;
     const std = Math.sqrt(times.reduce((a, b) => a + (b - mean) ** 2, 0) / n);
-    return `min ${min.toFixed(2)}ms, mean ${mean.toFixed(2)}±${std.toFixed(2)}ms`;
+    const minStr = min.toFixed(2).padStart(7);
+    const meanStr = mean.toFixed(2).padStart(7);
+    return `min ${minStr}ms   mean ${meanStr}±${std.toFixed(2)}ms`;
+}
+
+// pad a label to a fixed width so stats() columns line up across runs
+function label(text) {
+    return `${text}`.padEnd(25);
 }
 
 const coords = [];
@@ -78,7 +83,7 @@ function buildIndex() {
 }
 
 const index = buildIndex();
-console.log(`index size: ${index.data.byteLength.toLocaleString()} bytes`);
+console.log(`index size: ${index.data.byteLength.toLocaleString()} bytes\n`);
 
 function benchIndex() {
     const times = [];
@@ -88,7 +93,7 @@ function benchIndex() {
         buildIndex();
         times.push(performance.now() - start);
     }
-    console.log(`index: ${stats(times)}`);
+    console.log(`${label(`index ${N} boxes`)} ${stats(times)}`);
 }
 benchIndex();
 
@@ -108,7 +113,7 @@ function benchSearch(boxes, name, count) {
         }
         times.push(performance.now() - start);
     }
-    console.log(`${count} searches ${name}: ${stats(times)}`);
+    console.log(`${label(`${count} searches ${name}`)} ${stats(times)}`);
 }
 
 function benchNeighbors(Ksearch, M) {
@@ -124,7 +129,7 @@ function benchNeighbors(Ksearch, M) {
         }
         times.push(performance.now() - start);
     }
-    console.log(`${Ksearch} searches of ${M} neighbors: ${stats(times)}`);
+    console.log(`${label(`${Ksearch} searches of k-${M}`)} ${stats(times)}`);
 }
 
 for (const t of searchTests) benchSearch(t.boxes, t.name, t.count);
