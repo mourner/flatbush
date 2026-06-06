@@ -159,6 +159,20 @@ test('throws an error if added less items than the index size', () => {
     });
 });
 
+test('trims an over-allocated index to the number of added items', () => {
+    const numAdded = 50;
+    const index = new Flatbush(data.length / 4);
+    for (let i = 0; i < 4 * numAdded; i += 4) {
+        index.add(data[i], data[i + 1], data[i + 2], data[i + 3]);
+    }
+    index.trim();
+    index.finish();
+
+    assert.equal(index.numItems, numAdded);
+    assert.ok(index.data.byteLength < createIndex().data.byteLength);
+    assert.deepEqual(index.search(0, 0, 20, 20), createSmallIndex(numAdded).search(0, 0, 20, 20));
+});
+
 test('throws an error if searching before indexing', () => {
     assert.throws(() => {
         const index = new Flatbush(data.length / 4);
