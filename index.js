@@ -218,38 +218,42 @@ export default class Flatbush {
         if (this._pos !== this._boxes.length) {
             throw new Error('Data not yet indexed - call index.finish().');
         }
+        const {_boxes, _levelBounds} = this;
+        const numItems4 = this.numItems * 4;
 
         /** @type number | undefined */
-        let nodeIndex = this._boxes.length - 4;
+        let nodeIndex = _boxes.length - 4;
+        let level = _levelBounds.length - 1; // start at the root level
         const queue = [];
         const results = [];
 
         while (nodeIndex !== undefined) {
-            // find the end index of the node
-            const end = Math.min(nodeIndex + this.nodeSize * 4, upperBound(nodeIndex, this._levelBounds));
+            // find the end index of the node, capped at the level boundary
+            const end = Math.min(nodeIndex + this.nodeSize * 4, _levelBounds[level]);
 
             // search through child nodes
             for (let /** @type {number} */ pos = nodeIndex; pos < end; pos += 4) {
                 // check if node bbox intersects with query bbox
-                const x0 = this._boxes[pos];
+                const x0 = _boxes[pos];
                 if (maxX < x0) continue;
-                const y0 = this._boxes[pos + 1];
+                const y0 = _boxes[pos + 1];
                 if (maxY < y0) continue;
-                const x1 = this._boxes[pos + 2];
+                const x1 = _boxes[pos + 2];
                 if (minX > x1) continue;
-                const y1 = this._boxes[pos + 3];
+                const y1 = _boxes[pos + 3];
                 if (minY > y1) continue;
 
                 const index = this._indices[pos >> 2] | 0;
 
-                if (nodeIndex >= this.numItems * 4) {
-                    queue.push(index); // node; add it to the search queue
+                if (nodeIndex >= numItems4) {
+                    queue.push(index, level - 1); // node; add it and its level to the search queue
 
                 } else if (filterFn === undefined || filterFn(index, x0, y0, x1, y1)) {
                     results.push(index); // leaf item
                 }
             }
 
+            level = /** @type {number} */ (queue.pop());
             nodeIndex = queue.pop();
         }
 
@@ -269,31 +273,31 @@ export default class Flatbush {
         if (this._pos !== this._boxes.length) {
             throw new Error('Data not yet indexed - call index.finish().');
         }
-
+        const {_boxes, _levelBounds, _indices, _queue: q, nodeSize} = this;
+        const numItems4 = this.numItems * 4;
         /** @type number | undefined */
-        let nodeIndex = this._boxes.length - 4;
-        const q = this._queue;
+        let nodeIndex = _boxes.length - 4;
         const results = [];
         const maxDistSquared = maxDistance * maxDistance;
 
         /* eslint-disable no-labels */
         outer: while (nodeIndex !== undefined) {
             // find the end index of the node
-            const end = Math.min(nodeIndex + this.nodeSize * 4, upperBound(nodeIndex, this._levelBounds));
+            const end = Math.min(nodeIndex + nodeSize * 4, upperBound(nodeIndex, _levelBounds));
 
             // add child nodes to the queue
             for (let pos = nodeIndex; pos < end; pos += 4) {
-                const index = this._indices[pos >> 2] | 0;
-                const minX = this._boxes[pos];
-                const minY = this._boxes[pos + 1];
-                const maxX = this._boxes[pos + 2];
-                const maxY = this._boxes[pos + 3];
+                const index = _indices[pos >> 2] | 0;
+                const minX = _boxes[pos];
+                const minY = _boxes[pos + 1];
+                const maxX = _boxes[pos + 2];
+                const maxY = _boxes[pos + 3];
                 const dx = x < minX ? minX - x : x > maxX ? x - maxX : 0;
                 const dy = y < minY ? minY - y : y > maxY ? y - maxY : 0;
                 const dist = dx * dx + dy * dy;
                 if (dist > maxDistSquared) continue;
 
-                if (nodeIndex >= this.numItems * 4) {
+                if (nodeIndex >= numItems4) {
                     q.push(index << 1, dist); // node (use even id)
 
                 } else if (filterFn === undefined || filterFn(index)) {

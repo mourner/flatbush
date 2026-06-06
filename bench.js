@@ -59,6 +59,8 @@ const searchTests = [
     {name: '10%', area: 0.1, count: 100},
     {name: '1%', area: 0.01, count: 1000},
     {name: '0.1%', area: 0.001, count: 10000},
+    {name: '0.01%', area: 0.0001, count: 10000},
+    {name: '0.001%', area: 0.00001, count: 10000},
 ];
 for (const t of searchTests) t.boxes = makeQueryBoxes(t.area, t.count);
 
