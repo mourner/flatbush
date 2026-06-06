@@ -218,43 +218,43 @@ export default class Flatbush {
         if (this._pos !== this._boxes.length) {
             throw new Error('Data not yet indexed - call index.finish().');
         }
-        const {_boxes, _levelBounds} = this;
+        const {_boxes: boxes, _levelBounds: levelBounds, _indices: indices, nodeSize} = this;
         const numItems4 = this.numItems * 4;
 
         /** @type number | undefined */
-        let nodeIndex = _boxes.length - 4;
-        let level = _levelBounds.length - 1; // start at the root level
-        const queue = [];
+        let nodeIndex = boxes.length - 4;
+        let level = levelBounds.length - 1; // start at the root level
+        const q = [];
         const results = [];
 
         while (nodeIndex !== undefined) {
             // find the end index of the node, capped at the level boundary
-            const end = Math.min(nodeIndex + this.nodeSize * 4, _levelBounds[level]);
+            const end = Math.min(nodeIndex + nodeSize * 4, levelBounds[level]);
 
             // search through child nodes
             for (let /** @type {number} */ pos = nodeIndex; pos < end; pos += 4) {
                 // check if node bbox intersects with query bbox
-                const x0 = _boxes[pos];
+                const x0 = boxes[pos];
                 if (maxX < x0) continue;
-                const y0 = _boxes[pos + 1];
+                const y0 = boxes[pos + 1];
                 if (maxY < y0) continue;
-                const x1 = _boxes[pos + 2];
+                const x1 = boxes[pos + 2];
                 if (minX > x1) continue;
-                const y1 = _boxes[pos + 3];
+                const y1 = boxes[pos + 3];
                 if (minY > y1) continue;
 
-                const index = this._indices[pos >> 2] | 0;
+                const index = indices[pos >> 2] | 0;
 
                 if (nodeIndex >= numItems4) {
-                    queue.push(index, level - 1); // node; add it and its level to the search queue
+                    q.push(index, level - 1); // node; add it and its level to the search queue
 
                 } else if (filterFn === undefined || filterFn(index, x0, y0, x1, y1)) {
                     results.push(index); // leaf item
                 }
             }
 
-            level = /** @type {number} */ (queue.pop());
-            nodeIndex = queue.pop();
+            level = /** @type {number} */ (q.pop());
+            nodeIndex = q.pop();
         }
 
         return results;
@@ -273,47 +273,49 @@ export default class Flatbush {
         if (this._pos !== this._boxes.length) {
             throw new Error('Data not yet indexed - call index.finish().');
         }
-        const {_boxes, _levelBounds, _indices, _queue: q, nodeSize} = this;
+        const {_boxes: boxes, _levelBounds: levelBounds, _indices: indices, _queue: q, nodeSize} = this;
         const numItems4 = this.numItems * 4;
-        /** @type number | undefined */
-        let nodeIndex = _boxes.length - 4;
+        const nodeSize4 = nodeSize * 4;
         const results = [];
         const maxDistSquared = maxDistance * maxDistance;
 
-        /* eslint-disable no-labels */
-        outer: while (nodeIndex !== undefined) {
-            // find the end index of the node
-            const end = Math.min(nodeIndex + nodeSize * 4, upperBound(nodeIndex, _levelBounds));
+        // Tree nodes and leaves share the queue; encode leaves with LSB = 1 so we can tell them
+        // apart with `& 1`. Seed with the root node — any priority works since the queue is empty.
+        q.push((boxes.length - 4) << 1, 0);
 
-            // add child nodes to the queue
+        while (q.length) {
+            const top = q.ids[0];
+            // if the closest queued entry is a leaf, it's the next result in distance order
+            if (top & 1) {
+                if (q.values[0] > maxDistSquared) break;
+                q.pop();
+                results.push(top >> 1);
+                if (results.length === maxResults) break;
+                continue;
+            }
+
+            q.pop();
+            const nodeIndex = top >> 1;
+            const isLeafLevel = nodeIndex < numItems4;
+            const end = Math.min(nodeIndex + nodeSize4, upperBound(nodeIndex, levelBounds));
+
             for (let pos = nodeIndex; pos < end; pos += 4) {
-                const index = _indices[pos >> 2] | 0;
-                const minX = _boxes[pos];
-                const minY = _boxes[pos + 1];
-                const maxX = _boxes[pos + 2];
-                const maxY = _boxes[pos + 3];
+                const childIndex = indices[pos >> 2] | 0;
+                const minX = boxes[pos];
+                const minY = boxes[pos + 1];
+                const maxX = boxes[pos + 2];
+                const maxY = boxes[pos + 3];
                 const dx = x < minX ? minX - x : x > maxX ? x - maxX : 0;
                 const dy = y < minY ? minY - y : y > maxY ? y - maxY : 0;
                 const dist = dx * dx + dy * dy;
                 if (dist > maxDistSquared) continue;
 
-                if (nodeIndex >= numItems4) {
-                    q.push(index << 1, dist); // node (use even id)
-
-                } else if (filterFn === undefined || filterFn(index)) {
-                    q.push((index << 1) + 1, dist); // leaf item (use odd id)
+                if (isLeafLevel) {
+                    if (filterFn === undefined || filterFn(childIndex)) q.push((childIndex << 1) | 1, dist); // leaf item (odd id)
+                } else {
+                    q.push(childIndex << 1, dist); // node (even id)
                 }
             }
-
-            // pop items from the queue
-            while (q.length && (/** @type {number} */(q.peek()) & 1)) {
-                const dist = /** @type {number} */(q.peekValue());
-                if (dist > maxDistSquared) break outer;
-                results.push(/** @type {number} */(q.pop()) >> 1);
-                if (results.length === maxResults) break outer;
-            }
-
-            nodeIndex = q.length ? /** @type {number} */(q.pop()) >> 1 : undefined;
         }
 
         q.clear();
