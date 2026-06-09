@@ -327,6 +327,11 @@ export default class Flatbush {
         const results = [];
         const maxDistSquared = maxDistance * maxDistance;
 
+        // For a single nearest neighbor (maxResults === 1), track the closest leaf seen so far and use
+        // it as a tightened distance bound, skipping pushes of nodes/leaves that can't beat it
+        const trackNearest = maxResults === 1;
+        let bound = maxDistSquared;
+
         // Tree nodes and leaves share the queue; encode leaves with LSB = 1 so we can tell them
         // apart with `& 1`. Seed with the root node — any priority works since the queue is empty.
         q.push((boxes.length - 4) << 1, 0);
@@ -354,11 +359,14 @@ export default class Flatbush {
                 const dx = Math.max(Math.max(minX - x, x - maxX), 0);
                 const dy = Math.max(Math.max(minY - y, y - maxY), 0);
                 const dist = dx * dx + dy * dy;
-                if (dist > maxDistSquared) continue;
+                if (dist > bound) continue;
 
                 const childIndex = indices[pos >> 2] | 0;
                 if (isLeafLevel) {
-                    if (filterFn === undefined || filterFn(childIndex)) q.push((childIndex << 1) | 1, dist); // leaf item (odd id)
+                    if (filterFn === undefined || filterFn(childIndex)) {
+                        q.push((childIndex << 1) | 1, dist); // leaf item (odd id)
+                        if (trackNearest && dist < bound) bound = dist; // tighten bound to the closest leaf so far
+                    }
                 } else {
                     q.push(childIndex << 1, dist); // node (even id)
                 }
