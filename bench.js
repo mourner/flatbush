@@ -134,8 +134,8 @@ function benchNeighbors(Ksearch, M) {
 
 for (const t of searchTests) benchSearch(t.boxes, t.name, t.count);
 
-benchNeighbors(1000, 100);
-benchNeighbors(1, N);
 benchNeighbors(10000, 1);
+benchNeighbors(10000, 100);
+benchNeighbors(1, N);
 
 if (sink < 0) console.log(sink); // keep sink observable
