@@ -335,7 +335,6 @@ export default class Flatbush {
             const top = q.ids[0];
             // if the closest queued entry is a leaf, it's the next result in distance order
             if (top & 1) {
-                if (q.values[0] > maxDistSquared) break;
                 q.pop();
                 results.push(top >> 1);
                 if (results.length === maxResults) break;
@@ -348,16 +347,16 @@ export default class Flatbush {
             const end = Math.min(nodeIndex + nodeSize4, upperBound(nodeIndex, levelBounds));
 
             for (let pos = nodeIndex; pos < end; pos += 4) {
-                const childIndex = indices[pos >> 2] | 0;
                 const minX = boxes[pos];
                 const minY = boxes[pos + 1];
                 const maxX = boxes[pos + 2];
                 const maxY = boxes[pos + 3];
-                const dx = x < minX ? minX - x : x > maxX ? x - maxX : 0;
-                const dy = y < minY ? minY - y : y > maxY ? y - maxY : 0;
+                const dx = Math.max(Math.max(minX - x, x - maxX), 0);
+                const dy = Math.max(Math.max(minY - y, y - maxY), 0);
                 const dist = dx * dx + dy * dy;
                 if (dist > maxDistSquared) continue;
 
+                const childIndex = indices[pos >> 2] | 0;
                 if (isLeafLevel) {
                     if (filterFn === undefined || filterFn(childIndex)) q.push((childIndex << 1) | 1, dist); // leaf item (odd id)
                 } else {
