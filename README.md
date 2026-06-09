@@ -139,17 +139,19 @@ Very useful for transferring or sharing indices between threads or storing them 
 
 ## Performance
 
-Running `node bench.js` with Node v14:
+Running `node bench.js` on a MacBook Pro (M1 Pro, Node v24):
 
-bench | flatbush | rbush
---- | --- | ---
-index 1,000,000 rectangles | 273ms | 1143ms
-1000 searches 10% | 575ms | 781ms
-1000 searches 1% | 63ms | 155ms
-1000 searches 0.01% | 6ms | 17ms
-1000 searches of 100 neighbors | 24ms | 43ms
-1 search of 1,000,000 neighbors | 133ms | 280ms
-100,000 searches of 1 neighbor | 710ms | 1170ms
+bench | flatbush
+--- | ---
+index 1,000,000 rectangles | 109ms
+100 searches 10% area | 64ms
+1000 searches 1% area| 66ms
+10000 searches 0.1% area | 150ms
+10000 searches 0.01% area | 51ms
+10000 searches 0.001% area | 31ms
+10000 searches of 1 neighbor | 30ms
+10000 searches of 100 neighbors | 127ms
+1 search of 1,000,000 neighbors | 84ms
 
 ## Ports
 
