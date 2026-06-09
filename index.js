@@ -124,13 +124,15 @@ export default class Flatbush {
      * @returns {number} A zero-based, incremental number that represents the newly added rectangle.
      */
     add(minX, minY, maxX = minX, maxY = minY) {
-        const index = this._pos >> 2;
+        const pos = this._pos;
+        const index = pos >> 2;
         const boxes = this._boxes;
         this._indices[index] = index;
-        boxes[this._pos++] = minX;
-        boxes[this._pos++] = minY;
-        boxes[this._pos++] = maxX;
-        boxes[this._pos++] = maxY;
+        boxes[pos] = minX;
+        boxes[pos + 1] = minY;
+        boxes[pos + 2] = maxX;
+        boxes[pos + 3] = maxY;
+        this._pos = pos + 4;
 
         if (minX < this.minX) this.minX = minX;
         if (minY < this.minY) this.minY = minY;
@@ -156,53 +158,58 @@ export default class Flatbush {
             return;
         }
 
-        const width = (this.maxX - this.minX) || 1;
-        const height = (this.maxY - this.minY) || 1;
-        const hilbertValues = new Int32Array(this.numItems);
+        const {numItems, minX, minY, nodeSize, _indices: indices, _levelBounds: levelBounds} = this;
+        const width = (this.maxX - minX) || 1;
+        const height = (this.maxY - minY) || 1;
+        const hilbertValues = new Int32Array(numItems);
         const hilbertMax = (1 << 16) - 1;
+        const sx = hilbertMax / width;
+        const sy = hilbertMax / height;
 
         // map item centers into Hilbert coordinate space and calculate Hilbert values
-        for (let i = 0, pos = 0; i < this.numItems; i++) {
-            const minX = boxes[pos++];
-            const minY = boxes[pos++];
-            const maxX = boxes[pos++];
-            const maxY = boxes[pos++];
-            const x = Math.floor(hilbertMax * ((minX + maxX) / 2 - this.minX) / width);
-            const y = Math.floor(hilbertMax * ((minY + maxY) / 2 - this.minY) / height);
+        for (let i = 0, pos = 0; i < numItems; i++) {
+            const itemMinX = boxes[pos++];
+            const itemMinY = boxes[pos++];
+            const itemMaxX = boxes[pos++];
+            const itemMaxY = boxes[pos++];
+            const x = (sx * ((itemMinX + itemMaxX) / 2 - minX)) | 0;
+            const y = (sy * ((itemMinY + itemMaxY) / 2 - minY)) | 0;
             hilbertValues[i] = hilbert(x, y);
         }
 
         // sort items by their Hilbert value (for packing later)
-        sort(hilbertValues, boxes, this._indices, 0, this.numItems - 1, this.nodeSize);
+        sort(hilbertValues, boxes, indices, 0, numItems - 1, nodeSize);
 
         // generate nodes at each tree level, bottom-up
-        for (let i = 0, pos = 0; i < this._levelBounds.length - 1; i++) {
-            const end = this._levelBounds[i];
+        let pos = numItems * 4;
+        for (let i = 0, readPos = 0; i < levelBounds.length - 1; i++) {
+            const end = levelBounds[i];
 
             // generate a parent node for each block of consecutive <nodeSize> nodes
-            while (pos < end) {
-                const nodeIndex = pos;
+            while (readPos < end) {
+                const nodeIndex = readPos;
 
                 // calculate bbox for the new node
-                let nodeMinX = boxes[pos++];
-                let nodeMinY = boxes[pos++];
-                let nodeMaxX = boxes[pos++];
-                let nodeMaxY = boxes[pos++];
-                for (let j = 1; j < this.nodeSize && pos < end; j++) {
-                    nodeMinX = Math.min(nodeMinX, boxes[pos++]);
-                    nodeMinY = Math.min(nodeMinY, boxes[pos++]);
-                    nodeMaxX = Math.max(nodeMaxX, boxes[pos++]);
-                    nodeMaxY = Math.max(nodeMaxY, boxes[pos++]);
+                let nodeMinX = boxes[readPos++];
+                let nodeMinY = boxes[readPos++];
+                let nodeMaxX = boxes[readPos++];
+                let nodeMaxY = boxes[readPos++];
+                for (let j = 1; j < nodeSize && readPos < end; j++) {
+                    nodeMinX = Math.min(nodeMinX, boxes[readPos++]);
+                    nodeMinY = Math.min(nodeMinY, boxes[readPos++]);
+                    nodeMaxX = Math.max(nodeMaxX, boxes[readPos++]);
+                    nodeMaxY = Math.max(nodeMaxY, boxes[readPos++]);
                 }
 
                 // add the new node to the tree data
-                this._indices[this._pos >> 2] = nodeIndex;
-                boxes[this._pos++] = nodeMinX;
-                boxes[this._pos++] = nodeMinY;
-                boxes[this._pos++] = nodeMaxX;
-                boxes[this._pos++] = nodeMaxY;
+                indices[pos >> 2] = nodeIndex;
+                boxes[pos++] = nodeMinX;
+                boxes[pos++] = nodeMinY;
+                boxes[pos++] = nodeMaxX;
+                boxes[pos++] = nodeMaxY;
             }
         }
+        this._pos = pos;
     }
 
     /**
@@ -235,7 +242,7 @@ export default class Flatbush {
             const isNode = nodeIndex >= numItems4;
 
             if (contained) {
-                this._collectContained(nodeIndex, end, level, isNode, q, results, filterFn);
+                this._collectContained(nodeIndex, end, level, numItems4, results, filterFn);
 
             } else {
                 // search through child nodes
@@ -275,30 +282,28 @@ export default class Flatbush {
     }
 
     /**
-     * Collect children of a node whose bbox is fully inside the query, skipping intersection tests.
+     * Collect all leaves of a subtree that's fully inside the query, skipping intersection tests.
+     * Because the tree is packed bottom-up, those leaves occupy one contiguous block of the leaf
+     * level, so we skip traversal entirely: descend to the first leaf, then sweep the flat range.
      * @param {number} nodeIndex
      * @param {number} end
      * @param {number} level
-     * @param {boolean} isNode whether the children are tree nodes (vs leaf items)
-     * @param {number[]} q the traversal queue
+     * @param {number} numItems4
      * @param {number[]} results
      * @param {((index: number, x0: number, y0: number, x1: number, y1: number) => boolean) | undefined} filterFn
      */
-    _collectContained(nodeIndex, end, level, isNode, q, results, filterFn) {
+    _collectContained(nodeIndex, end, level, numItems4, results, filterFn) {
         const boxes = this._boxes;
         const indices = this._indices;
-        if (isNode) {
-            // all children are contained too, so enqueue them flagged without intersection tests
-            for (let pos = nodeIndex; pos < end; pos += 4) {
-                q.push(indices[pos >> 2] | 1, level - 1); // contained node (LSB flag; `| 1` also coerces to int)
-            }
+        let pos = nodeIndex;
+        for (let l = level; l > 0; l--) pos = indices[pos >> 2];
+        const leafEnd = Math.min(pos + (end - nodeIndex) * this.nodeSize ** level, numItems4);
+        if (filterFn === undefined) {
+            for (; pos < leafEnd; pos += 4) results.push(indices[pos >> 2] | 0);
         } else {
-            // leaf level: every leaf matches, only the filter can exclude it
-            for (let pos = nodeIndex; pos < end; pos += 4) {
+            for (; pos < leafEnd; pos += 4) {
                 const index = indices[pos >> 2] | 0;
-                if (filterFn === undefined || filterFn(index, boxes[pos], boxes[pos + 1], boxes[pos + 2], boxes[pos + 3])) {
-                    results.push(index);
-                }
+                if (filterFn(index, boxes[pos], boxes[pos + 1], boxes[pos + 2], boxes[pos + 3])) results.push(index);
             }
         }
     }
