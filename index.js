@@ -106,7 +106,7 @@ export default class Flatbush {
             this.maxY = -Infinity;
 
             new Uint8Array(data, 0, 2).set([0xfb, (VERSION << 4) + arrayTypeIndex]);
-            new Uint16Array(data, 2, 1)[0] = nodeSize;
+            new Uint16Array(data, 2, 1)[0] = this.nodeSize;
             new Uint32Array(data, 4, 1)[0] = numItems;
         }
 

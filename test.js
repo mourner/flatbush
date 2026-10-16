@@ -2,6 +2,22 @@ import Flatbush from './index.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+test('round-trips clamped node sizes', () => {
+    for (const nodeSize of [16, 2, 65535, 65536, 65537, -1, 0, 1]) {
+        const index = new Flatbush(3, nodeSize);
+        index.add(10, 0);
+        index.add(100, 0);
+        index.add(0, 0);
+        index.finish();
+
+        const restored = Flatbush.from(index.data);
+        assert.equal(restored.nodeSize, index.nodeSize);
+        assert.deepEqual(restored.search(0, 0, 0, 0), index.search(0, 0, 0, 0));
+        assert.deepEqual(restored.search(-1, -1, 101, 1).sort(), [0, 1, 2]);
+        assert.deepEqual(restored.neighbors(0, 0, 1), [2]);
+    }
+});
+
 const data = [
     8, 62, 11, 66, 57, 17, 57, 19, 76, 26, 79, 29, 36, 56, 38, 56, 92, 77, 96, 80, 87, 70, 90, 74,
     43, 41, 47, 43, 0, 58, 2, 62, 76, 86, 80, 89, 27, 13, 27, 15, 71, 63, 75, 67, 25, 2, 27, 2, 87,
