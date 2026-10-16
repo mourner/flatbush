@@ -93,6 +93,64 @@ test('skips sorting less than nodeSize number of rectangles', () => {
     assert.deepEqual([...index._boxes.subarray(len - 4, len)], [rootXMin, rootYMin, rootXMax, rootYMax]);
 });
 
+test('limits bbox search results across tree shapes and query bounds', () => {
+    for (const [numItems, nodeSize] of [[1, 16], [14, 16], [100, 2], [100, 16]]) {
+        const index = createSmallIndex(numItems, nodeSize);
+        for (const bounds of [[-1, -1, 101, 101], [40, 40, 60, 60], [101, 101, 102, 102]]) {
+            const all = index.search(...bounds);
+            for (const limit of [0, 1, 3, numItems, numItems + 1, Infinity]) {
+                assert.deepEqual(index.search(...bounds, undefined, limit), all.slice(0, limit));
+            }
+            assert.deepEqual(index.search(...bounds), all);
+        }
+    }
+});
+
+test('stops bbox filtering when enough accepted results are found', () => {
+    const index = Flatbush.from(createIndex().data);
+    for (const bounds of [[-1, -1, 101, 101], [20, 20, 80, 80]]) {
+        const visited = [];
+        const all = index.search(...bounds, (i) => {
+            visited.push(i);
+            return i % 2 === 0;
+        });
+        assert.ok(all.length > 1);
+        for (const limit of [1, 3, all.length, all.length + 1]) {
+            const boundedVisits = [];
+            assert.deepEqual(index.search(...bounds, (i, x0, y0, x1, y1) => {
+                boundedVisits.push(i);
+                assert.deepEqual([x0, y0, x1, y1], data.slice(i * 4, i * 4 + 4));
+                return i % 2 === 0;
+            }, limit), all.slice(0, limit));
+            const end = limit > all.length ? visited.length : visited.indexOf(all[limit - 1]) + 1;
+            assert.deepEqual(boundedVisits, visited.slice(0, end));
+        }
+        assert.deepEqual(index.search(...bounds, () => false, 1), []);
+        assert.deepEqual(index.search(...bounds, () => assert.fail('filter called with limit zero'), 0), []);
+    }
+});
+
+test('validates bbox result limits after checking that the index is finished', () => {
+    const index = createIndex();
+    for (const limit of [-1, 0.5, NaN, -Infinity]) {
+        assert.throws(() => index.search(0, 0, 100, 100, undefined, limit), RangeError);
+    }
+    const unfinished = new Flatbush(1);
+    unfinished.add(0, 0);
+    assert.throws(() => unfinished.search(0, 0, 100, 100, undefined, 0), {
+        message: 'Data not yet indexed - call index.finish().'
+    });
+});
+
+test('bbox searches remain usable after a bounded filter throws', () => {
+    const index = createIndex();
+    const all = index.search(0, 0, 100, 100);
+    assert.throws(() => index.search(0, 0, 100, 100, () => {
+        throw new Error('filter failed');
+    }, 1), {message: 'filter failed'});
+    assert.deepEqual(index.search(0, 0, 100, 100), all);
+});
+
 test('performs bbox search', () => {
     const index = createIndex();
 

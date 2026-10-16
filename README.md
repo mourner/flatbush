@@ -84,7 +84,7 @@ If not provided, `maxX` and `maxY` default to `minX` and `minY` (essentially add
 Performs indexing of the added rectangles.
 Their number must match the one provided when creating a `Flatbush` object.
 
-#### `index.search(minX, minY, maxX, maxY[, filterFn])`
+#### `index.search(minX, minY, maxX, maxY[, filterFn, maxResults])`
 
 Returns an array of indices of items intersecting or touching a given bounding box. Item indices refer to the value returned by [`index.add()`](#indexaddminx-miny-maxx-maxy).
 
@@ -98,6 +98,20 @@ and only includes it if the function returned a truthy value.
 ```js
 const ids = index.search(10, 10, 20, 20, (i) => items[i].foo === 'bar');
 ```
+
+Set `maxResults` to stop searching after that many items pass the filter.
+For example, to check whether any matching item exists:
+
+```js
+const found = index.search(10, 10, 20, 20, (i) => items[i].foo === 'bar', 1).length > 0;
+// Without a filter:
+const intersects = index.search(10, 10, 20, 20, undefined, 1).length > 0;
+```
+
+The limit defaults to `Infinity` and must be a non-negative integer or `Infinity`.
+A limit of `0` returns an empty array without calling the filter.
+Once the limit is reached, remaining items are not visited and the filter is not called for them.
+Results are not sorted by distance; use `neighbors` when you need the closest items.
 
 Alternatively, instead of using the array of indices returned by `search`, you can handle the results in the function:
 

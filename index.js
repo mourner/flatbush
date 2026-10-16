@@ -219,12 +219,17 @@ export default class Flatbush {
      * @param {number} maxX
      * @param {number} maxY
      * @param {(index: number, x0: number, y0: number, x1: number, y1: number) => boolean} [filterFn] An optional function that is called on every found item; if supplied, only items for which this function returns true will be included in the results array.
+     * @param {number} [maxResults=Infinity] Stop after this many accepted items. Must be a non-negative integer or Infinity.
      * @returns {number[]} An array of indices of items intersecting or touching the given bounding box.
      */
-    search(minX, minY, maxX, maxY, filterFn) {
+    search(minX, minY, maxX, maxY, filterFn, maxResults = Infinity) {
         if (this._pos !== this._boxes.length) {
             throw new Error('Data not yet indexed - call index.finish().');
         }
+        if (maxResults !== Infinity && (!Number.isInteger(maxResults) || maxResults < 0)) {
+            throw new RangeError('maxResults must be a non-negative integer or Infinity.');
+        }
+        if (maxResults === 0) return [];
         const {_boxes: boxes, _levelBounds: levelBounds, _indices: indices, nodeSize} = this;
         const numItems4 = this.numItems * 4;
 
@@ -242,7 +247,8 @@ export default class Flatbush {
             const isNode = nodeIndex >= numItems4;
 
             if (contained) {
-                this._collectContained(nodeIndex, end, level, numItems4, results, filterFn);
+                this._collectContained(nodeIndex, end, level, numItems4, results, filterFn, maxResults);
+                if (results.length >= maxResults) return results;
 
             } else {
                 // search through child nodes
@@ -266,6 +272,7 @@ export default class Flatbush {
 
                     } else if (filterFn === undefined || filterFn(index, x0, y0, x1, y1)) {
                         results.push(index); // leaf item
+                        if (results.length >= maxResults) return results;
                     }
                 }
             }
@@ -291,19 +298,24 @@ export default class Flatbush {
      * @param {number} numItems4
      * @param {number[]} results
      * @param {((index: number, x0: number, y0: number, x1: number, y1: number) => boolean) | undefined} filterFn
+     * @param {number} maxResults
      */
-    _collectContained(nodeIndex, end, level, numItems4, results, filterFn) {
+    _collectContained(nodeIndex, end, level, numItems4, results, filterFn, maxResults) {
         const boxes = this._boxes;
         const indices = this._indices;
         let pos = nodeIndex;
         for (let l = level; l > 0; l--) pos = indices[pos >> 2];
         const leafEnd = Math.min(pos + (end - nodeIndex) * this.nodeSize ** level, numItems4);
         if (filterFn === undefined) {
-            for (; pos < leafEnd; pos += 4) results.push(indices[pos >> 2] | 0);
+            const limitedEnd = Math.min(leafEnd, pos + (maxResults - results.length) * 4);
+            for (; pos < limitedEnd; pos += 4) results.push(indices[pos >> 2] | 0);
         } else {
             for (; pos < leafEnd; pos += 4) {
                 const index = indices[pos >> 2] | 0;
-                if (filterFn(index, boxes[pos], boxes[pos + 1], boxes[pos + 2], boxes[pos + 3])) results.push(index);
+                if (filterFn(index, boxes[pos], boxes[pos + 1], boxes[pos + 2], boxes[pos + 3])) {
+                    results.push(index);
+                    if (results.length >= maxResults) return;
+                }
             }
         }
     }
