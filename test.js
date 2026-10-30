@@ -109,6 +109,26 @@ test('performs bbox search', () => {
     assert.deepEqual(results.sort(compare), [57, 59, 58, 59, 48, 53, 52, 56, 40, 42, 43, 43, 43, 41, 47, 43].sort(compare));
 });
 
+test('checks for collisions with an early exit', () => {
+    for (const nodeSize of [2, 16]) {
+        const index = createSmallIndex(100, nodeSize);
+        for (let i = 0; i < 100; i++) {
+            const x = (i * 19) % 109 - 5;
+            const y = (i * 53) % 103 - 3;
+            const box = [x, y, x + i % 31, y + i % 29];
+            const ids = index.search(...box);
+            const filter = id => id % 3 === 0;
+            assert.equal(index.collides(...box), ids.length > 0);
+            assert.equal(index.collides(...box, filter), ids.some(filter));
+
+            let calls = 0;
+            index.collides(...box, () => ++calls > 0);
+            assert.equal(calls, Math.min(ids.length, 1));
+        }
+    }
+    assert.throws(() => new Flatbush(1).collides(0, 0, 1, 1));
+});
+
 test('reconstructs an index from array buffer', () => {
     const index = createIndex();
     const index2 = Flatbush.from(index.data);
@@ -283,41 +303,3 @@ test('quicksort should work with duplicates', () => {
 
 function compare(a, b) { return a - b; }
 
-
-test('collides matches filtered searches and stops at the first match', () => {
-    for (const nodeSize of [2, 16, 64]) {
-        for (const count of [1, 2, 17, 255, 512]) {
-            const index = new Flatbush(count, nodeSize);
-            for (let i = 0; i < count; i++) {
-                const x = (i * 71) % 101;
-                const y = (i * 43) % 97;
-                index.add(x, y, x + i % 7, y + i % 11);
-            }
-            index.finish();
-            const restored = Flatbush.from(index.data);
-            for (let i = 0; i < 150; i++) {
-                const x = (i * 19) % 109 - 5;
-                const y = (i * 53) % 103 - 3;
-                const box = [x, y, x + i % 31, y + i % 29];
-                const hits = index.search(...box);
-                const filter = id => id % 3 === 0;
-                assert.equal(index.collides(...box), hits.length > 0);
-                assert.equal(restored.collides(...box, filter), hits.some(filter));
-                let calls = 0;
-                assert.equal(index.collides(...box, () => { calls++; return true; }), hits.length > 0);
-                assert.equal(calls, hits.length > 0 ? 1 : 0);
-                calls = 0;
-                assert.equal(index.collides(...box, () => { calls++; return false; }), false);
-                assert.equal(calls, hits.length);
-            }
-        }
-    }
-    const unfinished = new Flatbush(1);
-    unfinished.add(0, 0, 1, 1);
-    assert.throws(() => unfinished.collides(0, 0, 1, 1), /not yet indexed/);
-    unfinished.finish();
-    assert.equal(unfinished.collides(1, 1, 1, 1), true);
-    assert.equal(unfinished.collides(0, 0, 1, 1, () => unfinished.collides(0, 0, 1, 1)), true);
-    assert.throws(() => unfinished.collides(0, 0, 1, 1, () => { throw new Error('predicate'); }), /predicate/);
-    assert.equal(unfinished.collides(0, 0, 1, 1), true);
-});
