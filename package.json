@@ -37,10 +37,10 @@
     "flatqueue": "^3.1.0"
   },
   "devDependencies": {
-    "@e18e/eslint-plugin": "^0.5.1",
-    "eslint": "^10.6.0",
-    "eslint-config-mourner": "^5.0.1",
-    "rolldown": "^1.1.5",
+    "@e18e/eslint-plugin": "^0.8.1",
+    "eslint": "^10.14.0",
+    "eslint-config-mourner": "^5.0.2",
+    "rolldown": "^1.2.16",
     "typescript": "^7.0.2"
   }
 }
