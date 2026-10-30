@@ -116,6 +116,29 @@ export default class Flatbush {
     }
 
     /**
+     * Shrink the index to the number of rectangles actually added, when fewer than `numItems`.
+     * Reallocates a smaller buffer, so call before `finish()`.
+     */
+    trim() {
+        const numAdded = this._pos >> 2;
+        if (numAdded >= this.numItems) return;
+
+        const ArrayBufferType = /** @type {ArrayBufferConstructor} */ (this.data.constructor);
+        const trimmed = new Flatbush(numAdded, this.nodeSize, this.ArrayType, ArrayBufferType);
+        trimmed._boxes.set(this._boxes.subarray(0, numAdded * 4));
+        trimmed._indices.set(this._indices.subarray(0, numAdded));
+
+        // adopt the smaller storage; _pos, bbox and the queue are already correct on `this`
+        this.numItems = numAdded;
+        this.data = trimmed.data;
+        this._boxes = trimmed._boxes;
+        this._indices = trimmed._indices;
+        this._levelBounds = trimmed._levelBounds;
+        this.IndexArrayType = trimmed.IndexArrayType;
+        this.byteOffset = 0;
+    }
+
+    /**
      * Add a given rectangle to the index.
      * @param {number} minX
      * @param {number} minY
