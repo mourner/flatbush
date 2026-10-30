@@ -213,6 +213,54 @@ export default class Flatbush {
     }
 
     /**
+     * Test whether any indexed item intersects a bounding box and passes an optional filter.
+     * Stops at the first match without collecting an array of results.
+     * @param {number} minX
+     * @param {number} minY
+     * @param {number} maxX
+     * @param {number} maxY
+     * @param {(index: number, x0: number, y0: number, x1: number, y1: number) => boolean} [filterFn]
+     * @returns {boolean}
+     */
+    collides(minX, minY, maxX, maxY, filterFn) {
+        if (this._pos !== this._boxes.length) {
+            throw new Error('Data not yet indexed - call index.finish().');
+        }
+        const {_boxes: boxes, _levelBounds: levelBounds, _indices: indices, nodeSize} = this;
+        const numItems4 = this.numItems * 4;
+        /** @type number | undefined */
+        let nodeIndex = boxes.length - 4;
+        let level = levelBounds.length - 1;
+        /** @type {number[]} */
+        const q = [];
+
+        while (nodeIndex !== undefined) {
+            const end = Math.min(nodeIndex + nodeSize * 4, levelBounds[level]);
+            const isNode = nodeIndex >= numItems4;
+            for (let pos = /** @type {number} */ (nodeIndex); pos < end; pos += 4) {
+                const x0 = boxes[pos];
+                if (maxX < x0) continue;
+                const y0 = boxes[pos + 1];
+                if (maxY < y0) continue;
+                const x1 = boxes[pos + 2];
+                if (minX > x1) continue;
+                const y1 = boxes[pos + 3];
+                if (minY > y1) continue;
+                /** @type {number} */
+                const index = indices[pos >> 2] | 0;
+                if (isNode) {
+                    q.push(index, level - 1);
+                } else if (filterFn === undefined || filterFn(index, x0, y0, x1, y1)) {
+                    return true;
+                }
+            }
+            level = /** @type {number} */ (q.pop());
+            nodeIndex = q.pop();
+        }
+        return false;
+    }
+
+    /**
      * Search the index by a bounding box.
      * @param {number} minX
      * @param {number} minY
