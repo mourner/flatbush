@@ -309,6 +309,51 @@ export default class Flatbush {
     }
 
     /**
+     * Check whether any item intersects or touches a bounding box, stopping at the first match.
+     * @param {number} minX
+     * @param {number} minY
+     * @param {number} maxX
+     * @param {number} maxY
+     * @param {(index: number, x0: number, y0: number, x1: number, y1: number) => boolean} [filterFn] An optional function that is called on found items; if supplied, only items for which this function returns true count as a match.
+     * @returns {boolean} Whether a matching item was found.
+     */
+    collides(minX, minY, maxX, maxY, filterFn) {
+        if (this._pos !== this._boxes.length) {
+            throw new Error('Data not yet indexed - call index.finish().');
+        }
+        const {_boxes: boxes, _levelBounds: levelBounds, _indices: indices, nodeSize} = this;
+        const numItems4 = this.numItems * 4;
+        /** @type number | undefined */
+        let nodeIndex = boxes.length - 4;
+        let level = levelBounds.length - 1; // start at the root level
+        const q = [];
+
+        while (nodeIndex !== undefined) {
+            const end = Math.min(nodeIndex + nodeSize * 4, levelBounds[level]);
+            const isNode = nodeIndex >= numItems4;
+            for (let /** @type {number} */ pos = nodeIndex; pos < end; pos += 4) {
+                const x0 = boxes[pos];
+                if (maxX < x0) continue;
+                const y0 = boxes[pos + 1];
+                if (maxY < y0) continue;
+                const x1 = boxes[pos + 2];
+                if (minX > x1) continue;
+                const y1 = boxes[pos + 3];
+                if (minY > y1) continue;
+                const index = indices[pos >> 2] | 0;
+                if (isNode) {
+                    q.push(index, level - 1);
+                } else if (filterFn === undefined || filterFn(index, x0, y0, x1, y1)) {
+                    return true;
+                }
+            }
+            level = /** @type {number} */ (q.pop());
+            nodeIndex = q.pop();
+        }
+        return false;
+    }
+
+    /**
      * Search items in order of distance from the given point.
      * @param {number} x
      * @param {number} y

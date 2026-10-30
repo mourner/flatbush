@@ -125,6 +125,26 @@ test('performs bbox search', () => {
     assert.deepEqual(results.sort(compare), [57, 59, 58, 59, 48, 53, 52, 56, 40, 42, 43, 43, 43, 41, 47, 43].sort(compare));
 });
 
+test('checks for collisions with an early exit', () => {
+    for (const nodeSize of [2, 16]) {
+        const index = createSmallIndex(100, nodeSize);
+        for (let i = 0; i < 100; i++) {
+            const x = (i * 19) % 109 - 5;
+            const y = (i * 53) % 103 - 3;
+            const box = [x, y, x + i % 31, y + i % 29];
+            const ids = index.search(...box);
+            const filter = id => id % 3 === 0;
+            assert.equal(index.collides(...box), ids.length > 0);
+            assert.equal(index.collides(...box, filter), ids.some(filter));
+
+            let calls = 0;
+            index.collides(...box, () => ++calls > 0);
+            assert.equal(calls, Math.min(ids.length, 1));
+        }
+    }
+    assert.throws(() => new Flatbush(1).collides(0, 0, 1, 1));
+});
+
 test('reconstructs an index from array buffer', () => {
     const index = createIndex();
     const index2 = Flatbush.from(index.data);
@@ -298,3 +318,4 @@ test('quicksort should work with duplicates', () => {
 
 
 function compare(a, b) { return a - b; }
+

@@ -107,6 +107,15 @@ index.search(10, 10, 20, 20, (i, x0, y0, x1, y1) => {
 })
 ```
 
+#### `index.collides(minX, minY, maxX, maxY[, filterFn])`
+
+Returns `true` if any item intersects or touches a given bounding box (and passes `filterFn` if given),
+stopping at the first match. Much faster than `search(...).length > 0` when there are many potential hits.
+
+```js
+const blocked = index.collides(10, 10, 20, 20, (i) => intersectsExactly(items[i], shape));
+```
+
 #### `index.neighbors(x, y[, maxResults, maxDistance, filterFn])`
 
 Returns an array of item indices in order of distance from the given `x, y`
