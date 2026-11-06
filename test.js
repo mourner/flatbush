@@ -319,3 +319,8 @@ test('quicksort should work with duplicates', () => {
 
 function compare(a, b) { return a - b; }
 
+test('zero nearest-neighbor limit skips traversal and filtering', () => {
+    const index = createIndex();
+    assert.deepEqual(index.neighbors(0, 0, 0), []);
+    assert.deepEqual(index.neighbors(0, 0, 0, Infinity, () => assert.fail('filter must not run')), []);
+});
