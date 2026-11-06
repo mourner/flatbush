@@ -319,3 +319,22 @@ test('quicksort should work with duplicates', () => {
 
 function compare(a, b) { return a - b; }
 
+
+
+test('zero nearest-neighbor limit skips traversal and filtering', () => {
+    for (const count of [1, 4, 25]) {
+        const index = new Flatbush(count, 4);
+        for (let i = 0; i < count; i++) index.add(i, i);
+        index.finish();
+        for (const tree of [index, Flatbush.from(index.data)]) {
+            let calls = 0;
+            const filter = () => { calls++; return true; };
+            assert.deepEqual(tree.neighbors(0, 0, 0, Infinity, filter), []);
+            assert.equal(calls, 0);
+            assert.deepEqual(tree.neighbors(0, 0, 1), [0]);
+            assert.equal(tree.neighbors(0, 0).length, count);
+        }
+    }
+    const unfinished = new Flatbush(1);
+    assert.throws(() => unfinished.neighbors(0, 0, 0), {message: 'Data not yet indexed - call index.finish().'});
+});
