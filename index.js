@@ -366,6 +366,7 @@ export default class Flatbush {
         if (this._pos !== this._boxes.length) {
             throw new Error('Data not yet indexed - call index.finish().');
         }
+        if (maxResults === 0) return [];
         const {_boxes: boxes, _levelBounds: levelBounds, _indices: indices, _queue: q, nodeSize} = this;
         const numItems4 = this.numItems * 4;
         const nodeSize4 = nodeSize * 4;
