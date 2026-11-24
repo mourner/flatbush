@@ -421,13 +421,13 @@ export default class Flatbush {
             // if the closest queued entry is a leaf, it's the next result in distance order
             if (top & 1) {
                 q.pop();
-                results.push(top >> 1);
+                results.push(top >>> 1);
                 if (results.length === maxResults) break;
                 continue;
             }
 
             q.pop();
-            const nodeIndex = top >> 1;
+            const nodeIndex = top >>> 1;
             const isLeafLevel = nodeIndex < numItems4;
             const end = Math.min(nodeIndex + nodeSize4, upperBound(nodeIndex, levelBounds));
 
