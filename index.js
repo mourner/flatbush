@@ -380,6 +380,7 @@ export default class Flatbush {
 
         // Tree nodes and leaves share the queue; encode leaves with LSB = 1 so we can tell them
         // apart with `& 1`. Seed with the root node — any priority works since the queue is empty.
+        q.clear();
         q.push((boxes.length - 4) << 1, 0);
 
         while (q.length) {
