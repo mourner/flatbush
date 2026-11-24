@@ -327,6 +327,94 @@ test('quicksort should work with duplicates', () => {
     });
 });
 
+test('sorting preserves item coordinates and query results across array types and tree shapes', () => {
+    let seed = 123456789;
+    const random = () => {
+        seed = (Math.imul(seed, 1664525) + 1013904223) | 0;
+        return seed >>> 0;
+    };
+
+    for (const ArrayType of [Float64Array, Float32Array, Int32Array, Uint16Array, Uint8Array]) {
+        for (const [n, nodeSize] of [[8191, 16], [8192, 16], [16385, 7], [17000, 64]]) {
+            const index = new Flatbush(n, nodeSize, ArrayType);
+            const coords = new ArrayType(n * 4);
+            for (let i = 0; i < n; i++) {
+                const x = random() % 200;
+                const y = random() % 200;
+                const w = random() % 20;
+                const h = random() % 20;
+                coords.set([x, y, x + w, y + h], i * 4);
+                index.add(x, y, x + w, y + h);
+            }
+            index.finish();
+
+            const ids = new Set();
+            for (let i = 0; i < n; i++) {
+                const id = index._indices[i];
+                ids.add(id);
+                for (let j = 0; j < 4; j++) {
+                    assert.equal(index._boxes[i * 4 + j], coords[id * 4 + j]);
+                }
+            }
+            assert.equal(ids.size, n);
+
+            const restored = Flatbush.from(index.data);
+            for (let q = 0; q < 10; q++) {
+                const x = random() % 220;
+                const y = random() % 220;
+                const expected = [];
+                for (let i = 0; i < n; i++) {
+                    const p = i * 4;
+                    if (coords[p] <= x + 20 && coords[p + 1] <= y + 20 &&
+                        coords[p + 2] >= x && coords[p + 3] >= y) expected.push(i);
+                }
+                assert.deepEqual(restored.search(x, y, x + 20, y + 20).sort(compare), expected);
+            }
+        }
+    }
+});
+
+test('single nearest neighbor matches brute force with ties, filters and distance limits', () => {
+    const index = createIndex();
+    const filters = [undefined, i => i % 2 === 0, () => false];
+    for (const filter of filters) {
+        for (const maxDistance of [0, 5, 20, Infinity]) {
+            for (let x = -10; x <= 110; x += 10) {
+                for (let y = -10; y <= 110; y += 10) {
+                    let best = Infinity;
+                    const distances = [];
+                    for (let i = 0; i < data.length / 4; i++) {
+                        const p = i * 4;
+                        const dx = Math.max(data[p] - x, 0, x - data[p + 2]);
+                        const dy = Math.max(data[p + 1] - y, 0, y - data[p + 3]);
+                        const dist = dx * dx + dy * dy;
+                        distances.push(dist);
+                        if ((!filter || filter(i)) && dist <= maxDistance ** 2) best = Math.min(best, dist);
+                    }
+                    const result = index.neighbors(x, y, 1, maxDistance, filter);
+                    assert.equal(result.length, best === Infinity ? 0 : 1);
+                    if (result.length) {
+                        assert.equal(distances[result[0]], best);
+                        assert.ok(!filter || filter(result[0]));
+                    }
+                    assert.deepEqual(index.neighbors(x, y, 1, maxDistance, filter), result);
+                }
+            }
+        }
+    }
+});
+
+test('single nearest neighbor includes an item exactly at the distance limit', () => {
+    const index = new Flatbush(2);
+    index.add(3, 4);
+    index.add(30, 40);
+    index.finish();
+    assert.deepEqual(index.neighbors(0, 0, 1, 5), [0]);
+    assert.deepEqual(index.neighbors(0, 0, 1, 4), []);
+    assert.deepEqual(index.neighbors(30, 40, 1, 0), [1]);
+    assert.deepEqual(index.neighbors(3, 4, 1, 0), [0]);
+});
+
 
 
 

@@ -161,7 +161,10 @@ export default class Flatbush {
         const {numItems, minX, minY, nodeSize, _indices: indices, _levelBounds: levelBounds} = this;
         const width = (this.maxX - minX) || 1;
         const height = (this.maxY - minY) || 1;
-        const hilbertValues = new Int32Array(numItems);
+        // radix sort is much faster on large inputs, but its setup costs dominate on small ones;
+        // it also needs scratch space of the same size, allocated here as the second half
+        const useRadix = numItems >= 8192;
+        const hilbertValues = new Int32Array(useRadix ? numItems * 2 : numItems);
         const hilbertMax = (1 << 16) - 1;
         const sx = hilbertMax / width;
         const sy = hilbertMax / height;
@@ -178,7 +181,11 @@ export default class Flatbush {
         }
 
         // sort items by their Hilbert value (for packing later)
-        sort(hilbertValues, boxes, indices, 0, numItems - 1, nodeSize);
+        if (useRadix) {
+            radixSort(hilbertValues, boxes, indices, numItems, this.ArrayType);
+        } else {
+            sort(hilbertValues, boxes, indices, 0, numItems - 1, nodeSize);
+        }
 
         // generate nodes at each tree level, bottom-up
         let pos = numItems * 4;
@@ -373,10 +380,11 @@ export default class Flatbush {
         const results = [];
         const maxDistSquared = maxDistance * maxDistance;
 
-        // For a single nearest neighbor (maxResults === 1), track the closest leaf seen so far and use
-        // it as a tightened distance bound, skipping pushes of nodes/leaves that can't beat it
+        // For a single nearest neighbor, keep the best leaf outside the queue and use its
+        // distance to prune the search. Only tree nodes need to go through the heap.
         const trackNearest = maxResults === 1;
         let bound = maxDistSquared;
+        let nearest = -1;
 
         // Tree nodes and leaves share the queue; encode leaves with LSB = 1 so we can tell them
         // apart with `& 1`. Seed with the root node — any priority works since the queue is empty.
@@ -384,6 +392,8 @@ export default class Flatbush {
         q.push((boxes.length - 4) << 1, 0);
 
         while (q.length) {
+            // No queued subtree can improve on the best leaf already found.
+            if (trackNearest && nearest !== -1 && q.values[0] >= bound) break;
             const top = q.ids[0];
             // if the closest queued entry is a leaf, it's the next result in distance order
             if (top & 1) {
@@ -411,8 +421,12 @@ export default class Flatbush {
                 const childIndex = indices[pos >> 2] | 0;
                 if (isLeafLevel) {
                     if (filterFn === undefined || filterFn(childIndex)) {
-                        q.push((childIndex << 1) | 1, dist); // leaf item (odd id)
-                        if (trackNearest && dist < bound) bound = dist; // tighten bound to the closest leaf so far
+                        if (trackNearest) {
+                            nearest = childIndex;
+                            bound = dist;
+                        } else {
+                            q.push((childIndex << 1) | 1, dist); // leaf item (odd id)
+                        }
                     }
                 } else {
                     q.push(childIndex << 1, dist); // node (even id)
@@ -420,6 +434,7 @@ export default class Flatbush {
             }
         }
 
+        if (nearest !== -1) results.push(nearest);
         return results;
     }
 }
@@ -441,6 +456,46 @@ function upperBound(value, arr) {
         }
     }
     return arr[i];
+}
+
+/** @type {Uint32Array | undefined} */
+let radixCounts; // allocated on first use and shared by all later sorts
+
+/**
+ * Sort items by Hilbert value with two 16-bit LSD radix passes, then reorder boxes to match.
+ * @param {Int32Array} values Hilbert values, followed by scratch space of the same size
+ * @param {TypedArray} boxes
+ * @param {Uint16Array | Uint32Array} indices
+ * @param {number} n
+ * @param {TypedArrayConstructor} ArrayType
+ */
+function radixSort(values, boxes, indices, n, ArrayType) {
+    if (!radixCounts) radixCounts = new Uint32Array(65536);
+    const counts = radixCounts;
+    let src = indices; // item ids start out in identity order
+    let dst = /** @type {Uint16Array | Uint32Array} */ (new Uint32Array(values.buffer, n * 4, n));
+
+    for (let shift = 0; shift < 32; shift += 16) {
+        const flip = shift ? 0x8000 : 0; // undo the signed offset applied in hilbert()
+        counts.fill(0);
+        for (let i = 0; i < n; i++) counts[((values[i] >>> shift) & 0xffff) ^ flip]++;
+        for (let i = 0, sum = 0; i < 65536; i++) {
+            const count = counts[i];
+            counts[i] = sum;
+            sum += count;
+        }
+        for (let i = 0; i < n; i++) {
+            const id = src[i];
+            dst[counts[((values[id] >>> shift) & 0xffff) ^ flip]++] = id;
+        }
+        [src, dst] = [dst, src];
+    }
+
+    const col = new ArrayType(/** @type {ArrayBuffer} */ (values.buffer), 0, n);
+    for (let c = 0; c < 4; c++) {
+        for (let i = 0, k = c; i < n; i++, k += 4) col[i] = boxes[k];
+        for (let i = 0, k = c; i < n; i++, k += 4) boxes[k] = col[indices[i]];
+    }
 }
 
 /**
