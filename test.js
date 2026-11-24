@@ -226,6 +226,19 @@ test('k-nearest-neighbors query accepts filterFn', () => {
     assert.deepEqual(ids.sort(compare), [6, 16, 18, 24, 54, 80].sort(compare));
 });
 
+test('neighbors starts clean after a filter throws', () => {
+    const index = new Flatbush(2);
+    index.add(0, 0);
+    index.add(10, 0);
+    index.finish();
+    const error = new Error('filter error');
+    assert.throws(() => index.neighbors(0, 0, Infinity, Infinity, (i) => {
+        if (i === 1) throw error;
+        return true;
+    }), e => e === error);
+    assert.deepEqual(index.neighbors(10, 0, Infinity, 0), [1]);
+});
+
 test('performs a k-nearest-neighbors query with all items', () => {
     const index = createIndex();
     const ids = index.neighbors(50, 50);
@@ -384,7 +397,7 @@ test('single nearest neighbor matches brute force with ties, filters and distanc
                         assert.equal(distances[result[0]], best);
                         assert.ok(!filter || filter(result[0]));
                     }
-                    assert.equal(index._queue.length, 0);
+                    assert.deepEqual(index.neighbors(x, y, 1, maxDistance, filter), result);
                 }
             }
         }
