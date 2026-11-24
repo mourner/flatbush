@@ -373,16 +373,19 @@ export default class Flatbush {
         const results = [];
         const maxDistSquared = maxDistance * maxDistance;
 
-        // For a single nearest neighbor (maxResults === 1), track the closest leaf seen so far and use
-        // it as a tightened distance bound, skipping pushes of nodes/leaves that can't beat it
+        // For a single nearest neighbor, keep the best leaf outside the queue and use its
+        // distance to prune the search. Only tree nodes need to go through the heap.
         const trackNearest = maxResults === 1;
         let bound = maxDistSquared;
+        let nearest = -1;
 
         // Tree nodes and leaves share the queue; encode leaves with LSB = 1 so we can tell them
         // apart with `& 1`. Seed with the root node — any priority works since the queue is empty.
         q.push((boxes.length - 4) << 1, 0);
 
         while (q.length) {
+            // No queued subtree can improve on the best leaf already found.
+            if (trackNearest && nearest !== -1 && q.values[0] >= bound) break;
             const top = q.ids[0];
             // if the closest queued entry is a leaf, it's the next result in distance order
             if (top & 1) {
@@ -410,8 +413,12 @@ export default class Flatbush {
                 const childIndex = indices[pos >> 2] | 0;
                 if (isLeafLevel) {
                     if (filterFn === undefined || filterFn(childIndex)) {
-                        q.push((childIndex << 1) | 1, dist); // leaf item (odd id)
-                        if (trackNearest && dist < bound) bound = dist; // tighten bound to the closest leaf so far
+                        if (trackNearest) {
+                            nearest = childIndex;
+                            bound = dist;
+                        } else {
+                            q.push((childIndex << 1) | 1, dist); // leaf item (odd id)
+                        }
                     }
                 } else {
                     q.push(childIndex << 1, dist); // node (even id)
@@ -420,6 +427,7 @@ export default class Flatbush {
         }
 
         q.clear();
+        if (nearest !== -1) results.push(nearest);
         return results;
     }
 }
