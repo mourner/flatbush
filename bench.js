@@ -116,20 +116,20 @@ function benchSearch(boxes, name, count) {
     console.log(`${label(`${count} searches ${name}`)} ${stats(times)}`);
 }
 
-function benchNeighbors(Ksearch, M) {
+function benchNeighbors(Ksearch, M, points = coords, suffix = '') {
     // warmup
     for (let i = 0; i < Ksearch; i++) {
-        sink += index.neighbors(coords[4 * i], coords[4 * i + 1], M).length;
+        sink += index.neighbors(points[4 * i], points[4 * i + 1], M).length;
     }
     const times = [];
     for (let r = 0; r < REPS; r++) {
         const start = performance.now();
         for (let i = 0; i < Ksearch; i++) {
-            sink += index.neighbors(coords[4 * i], coords[4 * i + 1], M).length;
+            sink += index.neighbors(points[4 * i], points[4 * i + 1], M).length;
         }
         times.push(performance.now() - start);
     }
-    console.log(`${label(`${Ksearch} searches of k-${M}`)} ${stats(times)}`);
+    console.log(`${label(`${Ksearch} searches of k-${M}${suffix}`)} ${stats(times)}`);
 }
 
 for (const t of searchTests) benchSearch(t.boxes, t.name, t.count);
@@ -137,5 +137,10 @@ for (const t of searchTests) benchSearch(t.boxes, t.name, t.count);
 benchNeighbors(10000, 1);
 benchNeighbors(10000, 100);
 benchNeighbors(1, N);
+
+// Also query independent points: box corners always have a zero-distance neighbor.
+const queryPoints = [];
+for (let i = 0; i < 10000; i++) addRandomBox(queryPoints, 0);
+benchNeighbors(10000, 1, queryPoints, ' (random)');
 
 if (sink < 0) console.log(sink); // keep sink observable
