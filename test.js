@@ -195,6 +195,19 @@ test('throws an error if added less items than the index size', () => {
     });
 });
 
+test('trims an over-allocated index to the number of added items', () => {
+    const numAdded = 50;
+    const index = new Flatbush(data.length / 4);
+    for (let i = 0; i < 4 * numAdded; i += 4) {
+        index.add(data[i], data[i + 1], data[i + 2], data[i + 3]);
+    }
+    index.trim();
+    index.finish();
+
+    assert.equal(index.numItems, numAdded);
+    assert.deepEqual(new Uint8Array(index.data), new Uint8Array(createSmallIndex(numAdded).data));
+});
+
 test('throws an error if searching before indexing', () => {
     assert.throws(() => {
         const index = new Flatbush(data.length / 4);
