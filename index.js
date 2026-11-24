@@ -117,7 +117,7 @@ export default class Flatbush {
 
     /**
      * Shrink the index to the number of rectangles actually added, when fewer than `numItems`.
-     * Reallocates a smaller buffer, so call before `finish()`.
+     * Reallocates a smaller buffer and copies the data over. Must be called before `finish()`.
      */
     trim() {
         const numAdded = this._pos >> 2;

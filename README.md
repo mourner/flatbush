@@ -79,6 +79,13 @@ you may prefer `SharedArrayBuffer` if you want to share the index between thread
 Adds a given rectangle to the index. Returns a zero-based, incremental number that represents the newly added rectangle.
 If not provided, `maxX` and `maxY` default to `minX` and `minY` (essentially adding a point).
 
+#### `index.trim()`
+
+Shrinks the index to the number of rectangles actually added, if fewer than `numItems`.
+Useful when you only know an upper bound on the number of items upfront.
+Allocates a new, smaller buffer and copies the data over, so prefer an exact `numItems` when possible.
+Must be called before `index.finish()`.
+
 #### `index.finish()`
 
 Performs indexing of the added rectangles.

@@ -205,8 +205,7 @@ test('trims an over-allocated index to the number of added items', () => {
     index.finish();
 
     assert.equal(index.numItems, numAdded);
-    assert.ok(index.data.byteLength < createIndex().data.byteLength);
-    assert.deepEqual(index.search(0, 0, 20, 20), createSmallIndex(numAdded).search(0, 0, 20, 20));
+    assert.deepEqual(new Uint8Array(index.data), new Uint8Array(createSmallIndex(numAdded).data));
 });
 
 test('throws an error if searching before indexing', () => {
