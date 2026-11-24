@@ -420,7 +420,6 @@ export default class Flatbush {
             }
         }
 
-        q.clear();
         return results;
     }
 }
