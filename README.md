@@ -68,7 +68,7 @@ Alternatively, there's a browser bundle with a `Flatbush` global variable:
 
 Creates a Flatbush index that will hold a given number of items (`numItems`). Additionally accepts:
 
-- `nodeSize`: size of the tree node (`16` by default); experiment with different values for best performance (increasing this value makes indexing faster and queries slower, and vise versa).
+- `nodeSize`: size of the tree node (`16` by default). Affects query performance, with the best value depending on the data and query patterns, so experiment for your use case. It has little effect on indexing speed.
 - `ArrayType`: the array type used for coordinates storage (`Float64Array` by default);
 other types may be faster in certain cases (e.g. `Int32Array` when your data is integer).
 - `ArrayBufferType`: the array buffer type used to store data (`ArrayBuffer` by default);
@@ -89,7 +89,7 @@ Must be called before `index.finish()`.
 #### `index.finish()`
 
 Performs indexing of the added rectangles.
-Their number must match the one provided when creating a `Flatbush` object.
+Their number must match the one provided when creating a `Flatbush` object (or call [`index.trim()`](#indextrim) first if you added fewer).
 
 #### `index.search(minX, minY, maxX, maxY[, filterFn])`
 
@@ -155,19 +155,19 @@ Very useful for transferring or sharing indices between threads or storing them 
 
 ## Performance
 
-Running `node bench.js` on a MacBook Pro (M1 Pro, Node v24):
+Running `node bench.js` on a MacBook Pro (M1 Pro, Node v26):
 
 bench | flatbush
 --- | ---
-index 1,000,000 rectangles | 109ms
-100 searches 10% area | 64ms
-1000 searches 1% area| 66ms
-10000 searches 0.1% area | 150ms
-10000 searches 0.01% area | 51ms
-10000 searches 0.001% area | 31ms
-10000 searches of 1 neighbor | 30ms
-10000 searches of 100 neighbors | 127ms
-1 search of 1,000,000 neighbors | 84ms
+index 1,000,000 rectangles | 44ms
+100 searches 10% area | 44ms
+1000 searches 1% area | 63ms
+10000 searches 0.1% area | 146ms
+10000 searches 0.01% area | 61ms
+10000 searches 0.001% area | 34ms
+10000 searches of 1 neighbor | 23ms
+10000 searches of 100 neighbors | 138ms
+1 search of 1,000,000 neighbors | 88ms
 
 ## Ports
 
