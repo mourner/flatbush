@@ -1,5 +1,3 @@
-import FlatQueue from 'flatqueue';
-
 const ARRAY_TYPES = [Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array, Int32Array, Uint32Array, Float32Array, Float64Array];
 const VERSION = 3; // serialized format version
 
@@ -110,9 +108,10 @@ export default class Flatbush {
             new Uint32Array(data, 4, 1)[0] = numItems;
         }
 
-        // a priority queue for k-nearest-neighbors queries
-        /** @type FlatQueue<number> */
-        this._queue = new FlatQueue();
+        // neighbors: a binary min-heap of node and item ids by squared distance, grown on demand and kept between calls
+        this._heapIds = new Uint32Array(64);
+        this._heapDists = new Float64Array(64);
+        this._heapSize = 0;
     }
 
     /**
@@ -397,7 +396,7 @@ export default class Flatbush {
             throw new Error('Data not yet indexed - call index.finish().');
         }
         if (maxResults === 0) return [];
-        const {_boxes: boxes, _levelBounds: levelBounds, _indices: indices, _queue: q, nodeSize} = this;
+        const {_boxes: boxes, _levelBounds: levelBounds, _indices: indices, nodeSize} = this;
         const numItems4 = this.numItems * 4;
         const nodeSize4 = nodeSize * 4;
         const results = [];
@@ -411,22 +410,22 @@ export default class Flatbush {
 
         // Tree nodes and leaves share the queue; encode leaves with LSB = 1 so we can tell them
         // apart with `& 1`. Seed with the root node — any priority works since the queue is empty.
-        q.clear();
-        q.push((boxes.length - 4) << 1, 0);
+        this._heapSize = 0;
+        this._push((boxes.length - 4) << 1, 0);
 
-        while (q.length) {
+        while (this._heapSize) {
             // No queued subtree can improve on the best leaf already found.
-            if (trackNearest && nearest !== -1 && q.values[0] >= bound) break;
-            const top = q.ids[0];
+            if (trackNearest && nearest !== -1 && this._heapDists[0] >= bound) break;
+            const top = this._heapIds[0];
             // if the closest queued entry is a leaf, it's the next result in distance order
             if (top & 1) {
-                q.pop();
+                this._pop();
                 results.push(top >>> 1);
                 if (results.length === maxResults) break;
                 continue;
             }
 
-            q.pop();
+            this._pop();
             const nodeIndex = top >>> 1;
             const isLeafLevel = nodeIndex < numItems4;
             const end = Math.min(nodeIndex + nodeSize4, upperBound(nodeIndex, levelBounds));
@@ -450,17 +449,57 @@ export default class Flatbush {
                             nearest = childIndex;
                             bound = dist;
                         } else {
-                            q.push((childIndex << 1) | 1, dist); // leaf item (odd id)
+                            this._push((childIndex << 1) | 1, dist); // leaf item (odd id)
                         }
                     }
                 } else {
-                    q.push(childIndex << 1, dist >= 0 ? dist : 0); // node (even id)
+                    this._push(childIndex << 1, dist >= 0 ? dist : 0); // node (even id)
                 }
             }
         }
 
         if (nearest !== -1) results.push(nearest);
         return results;
+    }
+
+    /** @param {number} id @param {number} dist */
+    _push(id, dist) {
+        let pos = this._heapSize++;
+        if (pos === this._heapIds.length) {
+            const ids = new Uint32Array(pos * 2), dists = new Float64Array(pos * 2);
+            ids.set(this._heapIds);
+            dists.set(this._heapDists);
+            this._heapIds = ids;
+            this._heapDists = dists;
+        }
+        const ids = this._heapIds, dists = this._heapDists;
+        while (pos > 0) {
+            const parent = (pos - 1) >> 1;
+            const d = dists[parent];
+            if (dist >= d) break;
+            ids[pos] = ids[parent];
+            dists[pos] = d;
+            pos = parent;
+        }
+        ids[pos] = id;
+        dists[pos] = dist;
+    }
+
+    _pop() {
+        const ids = this._heapIds, dists = this._heapDists, last = --this._heapSize;
+        if (last === 0) return;
+        const id = ids[last], dist = dists[last], half = last >> 1;
+        let pos = 0;
+        while (pos < half) {
+            const left = (pos << 1) + 1;
+            const child = left + (+(left + 1 < last) & +(dists[left + 1] < dists[left]));
+            if (dists[child] >= dist) break;
+            ids[pos] = ids[child];
+            dists[pos] = dists[child];
+            pos = child;
+        }
+        ids[pos] = id;
+        dists[pos] = dist;
     }
 }
 
