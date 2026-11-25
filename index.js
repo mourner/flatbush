@@ -186,7 +186,7 @@ export default class Flatbush {
         const height = (this.maxY - minY) || 1;
         // radix sort is much faster on large inputs, but its setup costs dominate on small ones;
         // it also needs scratch space of the same size, allocated here as the second half
-        const useRadix = numItems >= 8192;
+        const useRadix = numItems >= 1024;
         const hilbertValues = new Int32Array(useRadix ? numItems * 2 : numItems);
         const hilbertMax = (1 << 16) - 1;
         const sx = hilbertMax / width;
@@ -482,10 +482,10 @@ function upperBound(value, arr) {
 }
 
 /** @type {Uint32Array | undefined} */
-let radixCounts; // allocated on first use and shared by all later sorts
+let radixCounts; // counts for digits of 11, 11 and 10 bits, allocated on first use and shared by all later sorts
 
 /**
- * Sort items by Hilbert value with two 16-bit LSD radix passes, then reorder boxes to match.
+ * Sort item ids by Hilbert value with three LSD radix passes, then reorder boxes to match.
  * @param {Int32Array} values Hilbert values, followed by scratch space of the same size
  * @param {TypedArray} boxes
  * @param {Uint16Array | Uint32Array} indices
@@ -493,25 +493,38 @@ let radixCounts; // allocated on first use and shared by all later sorts
  * @param {TypedArrayConstructor} ArrayType
  */
 function radixSort(values, boxes, indices, n, ArrayType) {
-    if (!radixCounts) radixCounts = new Uint32Array(65536);
-    const counts = radixCounts;
-    let src = indices; // item ids start out in identity order
-    let dst = /** @type {Uint16Array | Uint32Array} */ (new Uint32Array(values.buffer, n * 4, n));
+    if (!radixCounts) radixCounts = new Uint32Array(5120);
+    const counts = radixCounts.fill(0);
+    const ids = new Uint32Array(values.buffer, 4 * n, n);
 
-    for (let shift = 0; shift < 32; shift += 16) {
-        const flip = shift ? 0x8000 : 0; // undo the signed offset applied in hilbert()
-        counts.fill(0);
-        for (let i = 0; i < n; i++) counts[((values[i] >>> shift) & 0xffff) ^ flip]++;
-        for (let i = 0, sum = 0; i < 65536; i++) {
-            const count = counts[i];
-            counts[i] = sum;
-            sum += count;
+    // the top digit flips its high bit to undo the signed offset applied in hilbert()
+    for (let i = 0; i < n; i++) {
+        const k = values[i];
+        counts[k & 2047]++;
+        counts[2048 + ((k >> 11) & 2047)]++;
+        counts[4096 + ((k >>> 22) ^ 512)]++;
+    }
+    for (let i = 0, lo = 0, mid = 0, hi = 0; i < 2048; i++) {
+        const c = counts[i];
+        counts[i] = lo;
+        lo += c;
+        const d = counts[2048 + i];
+        counts[2048 + i] = mid;
+        mid += d;
+        if (i < 1024) {
+            const e = counts[4096 + i];
+            counts[4096 + i] = hi;
+            hi += e;
         }
-        for (let i = 0; i < n; i++) {
-            const id = src[i];
-            dst[counts[((values[id] >>> shift) & 0xffff) ^ flip]++] = id;
-        }
-        [src, dst] = [dst, src];
+    }
+    for (let i = 0; i < n; i++) indices[counts[values[i] & 2047]++] = i;
+    for (let i = 0; i < n; i++) {
+        const id = indices[i];
+        ids[counts[2048 + ((values[id] >> 11) & 2047)]++] = id;
+    }
+    for (let i = 0; i < n; i++) {
+        const id = ids[i];
+        indices[counts[4096 + ((values[id] >>> 22) ^ 512)]++] = id;
     }
 
     const col = new ArrayType(/** @type {ArrayBuffer} */ (values.buffer), 0, n);
