@@ -441,9 +441,11 @@ export default class Flatbush {
                 const dist = dx * dx + dy * dy;
                 if (dist > bound) continue;
 
+                // a NaN box has a NaN distance, which would break the queue order: such an item is left out, while a
+                // node gets NaN bounds from any NaN box below and goes in at distance 0, so the others still count
                 const childIndex = indices[pos >> 2] | 0;
                 if (isLeafLevel) {
-                    if (filterFn === undefined || filterFn(childIndex)) {
+                    if (dist >= 0 && (filterFn === undefined || filterFn(childIndex))) {
                         if (trackNearest) {
                             nearest = childIndex;
                             bound = dist;
@@ -452,7 +454,7 @@ export default class Flatbush {
                         }
                     }
                 } else {
-                    q.push(childIndex << 1, dist); // node (even id)
+                    q.push(childIndex << 1, dist >= 0 ? dist : 0); // node (even id)
                 }
             }
         }
