@@ -1,7 +1,7 @@
 {
   "name": "flatbush",
   "version": "4.8.0",
-  "description": "Fast static spatial index for rectangles",
+  "description": "Fast static spatial index for 2D points and rectangles",
   "author": "Vladimir Agafonkin",
   "license": "ISC",
   "type": "module",

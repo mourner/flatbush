@@ -68,6 +68,7 @@ function createIndexSharedArrayBuffer() {
     return index;
 }
 
+function compare(a, b) { return a - b; }
 
 test('indexes a bunch of rectangles', () => {
     const index = createIndex();
@@ -75,7 +76,7 @@ test('indexes a bunch of rectangles', () => {
     const len = index._boxes.length;
     assert.equal(index._boxes.length + index._indices.length, 540);
     assert.deepEqual([...index._boxes.subarray(len - 4, len)], [0, 1, 96, 95]);
-    assert.deepEqual(index._indices[len / 4 - 1], 400);
+    assert.equal(index._indices[len / 4 - 1], 400);
 });
 
 test('skips sorting less than nodeSize number of rectangles', () => {
@@ -164,7 +165,7 @@ test('throws an error when reconstructing an index from array buffer if not 8-by
     });
 });
 
-test('reconstructs an index from a Uint8Array', () => {
+test('reconstructs an index from array buffer at a byte offset', () => {
     const index = createIndex();
     const byteOffset = 16;
     const newArrayBuffer = new ArrayBuffer(index.data.byteLength + byteOffset);
@@ -188,7 +189,7 @@ test('defaults to adding a point when not providing maxX/maxY', () => {
     assert.deepEqual(index.search(0, 0, 20, 20), [0]);
 });
 
-test('throws an error if added less items than the index size', () => {
+test('throws an error if added fewer items than the index size', () => {
     assert.throws(() => {
         const index = new Flatbush(data.length / 4);
         index.finish();
@@ -252,10 +253,16 @@ test('neighbors starts clean after a filter throws', () => {
     assert.deepEqual(index.neighbors(10, 0, Infinity, 0), [1]);
 });
 
+test('zero nearest-neighbor limit skips traversal and filtering', () => {
+    const index = createIndex();
+    assert.deepEqual(index.neighbors(0, 0, 0), []);
+    assert.deepEqual(index.neighbors(0, 0, 0, Infinity, () => assert.fail('filter must not run')), []);
+});
+
 test('performs a k-nearest-neighbors query with all items', () => {
     const index = createIndex();
     const ids = index.neighbors(50, 50);
-    assert.deepEqual(ids.length, data.length >> 2);
+    assert.equal(ids.length, data.length >> 2);
 });
 
 test('returns index of newly-added rectangle', () => {
@@ -264,7 +271,7 @@ test('returns index of newly-added rectangle', () => {
 
     const ids = [];
     for (let i = 0; i < count; i++) {
-        const id = index.add(data[i], data[i + 1], data[i + 2], data[i + 3]);
+        const id = index.add(data[4 * i], data[4 * i + 1], data[4 * i + 2], data[4 * i + 3]);
         ids.push(id);
     }
 
@@ -284,7 +291,7 @@ test('reconstructs an index from SharedArrayBuffer', () => {
     assert.deepEqual(index, index2);
 });
 
-test('quicksort should work with an inbalanced dataset', () => {
+test('sorting should work with an unbalanced dataset', () => {
     const n = 15000;
     const index = new Flatbush(2 * n);
 
@@ -312,7 +319,7 @@ test('quicksort should work with an inbalanced dataset', () => {
     });
 });
 
-test('quicksort should work with duplicates', () => {
+test('sorting should work with duplicates', () => {
     const n = 55000 + 5500 + 7700;
     const index = new Flatbush(n);
 
@@ -442,13 +449,33 @@ test('neighbors leaves out NaN boxes and keeps the order of the rest', () => {
     }
 });
 
+test('sorting handles heavily duplicated Hilbert values with both sort algorithms', () => {
+    for (const n of [999, 30000]) {
+        const index = new Flatbush(n);
+        for (let i = 0; i < n; i++) index.add(i % 3, 0);
+        index.finish();
+        const ids = index.search(1, 0, 1, 0).sort(compare);
+        assert.equal(ids.length, Math.floor((n + 1) / 3));
+        assert.ok(ids.every(i => i % 3 === 1));
+    }
+});
 
+test('coerces numeric strings and fractional node sizes', () => {
+    const index = new Flatbush('20', 4.5);
+    const expected = new Flatbush(20, 4);
+    for (let i = 0; i < 20; i++) {
+        index.add(i, i);
+        expected.add(i, i);
+    }
+    index.finish();
+    expected.finish();
+    assert.deepEqual(index, expected);
+    assert.equal(Flatbush.from(index.data).search(0, 0, 19, 19).length, 20);
+    assert.equal(new Flatbush(10, NaN).nodeSize, 2);
+});
 
-
-function compare(a, b) { return a - b; }
-
-test('zero nearest-neighbor limit skips traversal and filtering', () => {
-    const index = createIndex();
-    assert.deepEqual(index.neighbors(0, 0, 0), []);
-    assert.deepEqual(index.neighbors(0, 0, 0, Infinity, () => assert.fail('filter must not run')), []);
+test('rejects invalid numItems and ArrayType', () => {
+    assert.throws(() => new Flatbush(2.5), {message: 'Unexpected numItems value: 2.5.'});
+    assert.throws(() => new Flatbush('foo'), {message: 'Unexpected numItems value: foo.'});
+    assert.throws(() => new Flatbush(10, 16, Array), {message: 'Unexpected typed array class: Array.'});
 });

@@ -1,4 +1,3 @@
-
 import Flatbush from './index.js';
 
 const N = 1000000;
@@ -53,7 +52,7 @@ function stats(times) {
 
 // pad a label to a fixed width so stats() columns line up across runs
 function label(text) {
-    return `${text}`.padEnd(25);
+    return `${text}`.padEnd(31);
 }
 
 const coords = [];
@@ -129,7 +128,7 @@ function benchNeighbors(Ksearch, M, points = coords, suffix = '') {
         }
         times.push(performance.now() - start);
     }
-    console.log(`${label(`${Ksearch} searches of k-${M}${suffix}`)} ${stats(times)}`);
+    console.log(`${label(`${Ksearch} search${Ksearch === 1 ? '' : 'es'} of k-${M}${suffix}`)} ${stats(times)}`);
 }
 
 for (const t of searchTests) benchSearch(t.boxes, t.name, t.count);

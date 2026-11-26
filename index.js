@@ -50,15 +50,18 @@ export default class Flatbush {
      */
     constructor(numItems, nodeSize = 16, ArrayType = Float64Array, ArrayBufferType = ArrayBuffer, data, byteOffset = 0) {
         if (numItems === undefined) throw new Error('Missing required argument: numItems.');
-        if (isNaN(numItems) || numItems <= 0) throw new Error(`Unexpected numItems value: ${numItems}.`);
+        if (!Number.isInteger(+numItems) || numItems <= 0) throw new Error(`Unexpected numItems value: ${numItems}.`);
+
+        const arrayTypeIndex = ARRAY_TYPES.indexOf(ArrayType);
+        if (arrayTypeIndex < 0) throw new Error(`Unexpected typed array class: ${ArrayType?.name}.`);
 
         this.numItems = +numItems;
-        this.nodeSize = Math.min(Math.max(+nodeSize, 2), 65535);
+        this.nodeSize = Math.min(Math.max(Math.floor(nodeSize) || 2, 2), 65535);
         this.byteOffset = byteOffset;
 
         // calculate the total number of nodes in the R-tree to allocate space for
         // and the index of each tree level (used in search later)
-        let n = numItems;
+        let n = this.numItems;
         let numNodes = n;
         this._levelBounds = [n * 4];
         do {
@@ -70,12 +73,7 @@ export default class Flatbush {
         this.ArrayType = ArrayType;
         this.IndexArrayType = numNodes < 16384 ? Uint16Array : Uint32Array;
 
-        const arrayTypeIndex = ARRAY_TYPES.indexOf(ArrayType);
         const nodesByteSize = numNodes * 4 * ArrayType.BYTES_PER_ELEMENT;
-
-        if (arrayTypeIndex < 0) {
-            throw new Error(`Unexpected typed array class: ${ArrayType}.`);
-        }
 
         /** @type {new(b: ArrayBufferLike, o: number, l: number) => TypedArray} */
         const BoxCtor = ArrayType;
@@ -105,7 +103,7 @@ export default class Flatbush {
 
             new Uint8Array(data, 0, 2).set([0xfb, (VERSION << 4) + arrayTypeIndex]);
             new Uint16Array(data, 2, 1)[0] = this.nodeSize;
-            new Uint32Array(data, 4, 1)[0] = numItems;
+            new Uint32Array(data, 4, 1)[0] = this.numItems;
         }
 
         // neighbors: a binary min-heap of node and item ids by squared distance, grown on demand and kept between calls
@@ -127,7 +125,7 @@ export default class Flatbush {
         trimmed._boxes.set(this._boxes.subarray(0, numAdded * 4));
         trimmed._indices.set(this._indices.subarray(0, numAdded));
 
-        // adopt the smaller storage; _pos, bbox and the queue are already correct on `this`
+        // adopt the smaller storage; _pos, bbox and the heap are already correct on `this`
         this.numItems = numAdded;
         this.data = trimmed.data;
         this._boxes = trimmed._boxes;
@@ -247,7 +245,7 @@ export default class Flatbush {
      * @param {number} minY
      * @param {number} maxX
      * @param {number} maxY
-     * @param {(index: number, x0: number, y0: number, x1: number, y1: number) => boolean} [filterFn] An optional function that is called on every found item; if supplied, only items for which this function returns true will be included in the results array.
+     * @param {(index: number, x0: number, y0: number, x1: number, y1: number) => unknown} [filterFn] An optional function that is called on every found item; if supplied, only items for which this function returns a truthy value will be included in the results array.
      * @returns {number[]} An array of indices of items intersecting or touching the given bounding box.
      */
     search(minX, minY, maxX, maxY, filterFn) {
@@ -257,7 +255,7 @@ export default class Flatbush {
         const {_boxes: boxes, _levelBounds: levelBounds, _indices: indices, nodeSize} = this;
         const numItems4 = this.numItems * 4;
 
-        /** @type number | undefined */
+        /** @type {number | undefined} */
         let nodeIndex = boxes.length - 4;
         let level = levelBounds.length - 1; // start at the root level
         const q = [];
@@ -319,7 +317,7 @@ export default class Flatbush {
      * @param {number} level
      * @param {number} numItems4
      * @param {number[]} results
-     * @param {((index: number, x0: number, y0: number, x1: number, y1: number) => boolean) | undefined} filterFn
+     * @param {((index: number, x0: number, y0: number, x1: number, y1: number) => unknown) | undefined} filterFn
      */
     _collectContained(nodeIndex, end, level, numItems4, results, filterFn) {
         const boxes = this._boxes;
@@ -343,7 +341,7 @@ export default class Flatbush {
      * @param {number} minY
      * @param {number} maxX
      * @param {number} maxY
-     * @param {(index: number, x0: number, y0: number, x1: number, y1: number) => boolean} [filterFn] An optional function that is called on found items; if supplied, only items for which this function returns true count as a match.
+     * @param {(index: number, x0: number, y0: number, x1: number, y1: number) => unknown} [filterFn] An optional function that is called on found items; if supplied, only items for which this function returns a truthy value count as a match.
      * @returns {boolean} Whether a matching item was found.
      */
     collides(minX, minY, maxX, maxY, filterFn) {
@@ -352,7 +350,7 @@ export default class Flatbush {
         }
         const {_boxes: boxes, _levelBounds: levelBounds, _indices: indices, nodeSize} = this;
         const numItems4 = this.numItems * 4;
-        /** @type number | undefined */
+        /** @type {number | undefined} */
         let nodeIndex = boxes.length - 4;
         let level = levelBounds.length - 1; // start at the root level
         const q = [];
@@ -388,7 +386,7 @@ export default class Flatbush {
      * @param {number} y
      * @param {number} [maxResults=Infinity]
      * @param {number} [maxDistance=Infinity]
-     * @param {(index: number) => boolean} [filterFn] An optional function for filtering the results.
+     * @param {(index: number) => unknown} [filterFn] An optional function for filtering the results.
      * @returns {number[]} An array of indices of items found.
      */
     neighbors(x, y, maxResults = Infinity, maxDistance = Infinity, filterFn) {
@@ -417,15 +415,15 @@ export default class Flatbush {
             // No queued subtree can improve on the best leaf already found.
             if (trackNearest && nearest !== -1 && this._heapDists[0] >= bound) break;
             const top = this._heapIds[0];
+            this._pop();
+
             // if the closest queued entry is a leaf, it's the next result in distance order
             if (top & 1) {
-                this._pop();
                 results.push(top >>> 1);
                 if (results.length === maxResults) break;
                 continue;
             }
 
-            this._pop();
             const nodeIndex = top >>> 1;
             const isLeafLevel = nodeIndex < numItems4;
             const end = Math.min(nodeIndex + nodeSize4, upperBound(nodeIndex, levelBounds));
@@ -648,7 +646,7 @@ function swap(values, boxes, indices, i, j) {
 }
 
 /**
- * Fast Hilbert curve algorithm by http://threadlocalmutex.com/
+ * Fast Hilbert curve algorithm by https://threadlocalmutex.com/
  * Ported from C++ https://github.com/rawrunprotected/hilbert_curves (public domain)
  * @param {number} x
  * @param {number} y

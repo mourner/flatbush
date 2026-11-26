@@ -35,9 +35,8 @@ const neighborIds = index.neighbors(x, y, 5);
 // instantly transfer the index from a worker to the main thread
 postMessage(index.data, [index.data]);
 
-// reconstruct the index from a raw array buffer
-const index = Flatbush.from(e.data);
-
+// reconstruct the index from a raw array buffer on the other side
+const index2 = Flatbush.from(e.data);
 ```
 
 ## Install
@@ -149,7 +148,7 @@ Very useful for transferring or sharing indices between threads or storing them 
 - `data`: array buffer that holds the index.
 - `minX`, `minY`, `maxX`, `maxY`: bounding box of the data.
 - `numItems`: number of stored items.
-- `nodeSize`: number of items in a node tree.
+- `nodeSize`: maximum number of children per tree node.
 - `ArrayType`: array type used for internal coordinates storage.
 - `IndexArrayType`: array type used for internal item indices storage.
 
