@@ -90,6 +90,7 @@ export default class Flatbush {
             this.minY = this._boxes[this._pos - 3];
             this.maxX = this._boxes[this._pos - 2];
             this.maxY = this._boxes[this._pos - 1];
+            if (hasNaN(this._boxes, this._pos - 4)) throw new Error('Data has items with NaN coordinates.');
 
         } else {
             const data = this.data = new ArrayBufferType(8 + nodesByteSize + numNodes * this.IndexArrayType.BYTES_PER_ELEMENT);
@@ -167,44 +168,36 @@ export default class Flatbush {
         if (this._pos >> 2 !== this.numItems) {
             throw new Error(`Added ${this._pos >> 2} items when expected ${this.numItems}.`);
         }
-        const boxes = this._boxes;
+        const {_boxes: boxes, numItems, minX, minY, nodeSize, _indices: indices, _levelBounds: levelBounds} = this;
+        // with only one node, there's nothing to sort
+        if (numItems > nodeSize) {
+            const width = (this.maxX - minX) || 1;
+            const height = (this.maxY - minY) || 1;
+            // radix sort is much faster on large inputs, but its setup costs dominate on small ones;
+            // it also needs scratch space of the same size, allocated here as the second half
+            const useRadix = numItems >= 1024;
+            const hilbertValues = new Int32Array(useRadix ? numItems * 2 : numItems);
+            const hilbertMax = (1 << 16) - 1;
+            const sx = hilbertMax / width;
+            const sy = hilbertMax / height;
 
-        if (this.numItems <= this.nodeSize) {
-            // only one node, skip sorting and just fill the root box
-            boxes[this._pos++] = this.minX;
-            boxes[this._pos++] = this.minY;
-            boxes[this._pos++] = this.maxX;
-            boxes[this._pos++] = this.maxY;
-            return;
-        }
+            // map item centers into Hilbert coordinate space and calculate Hilbert values
+            for (let i = 0, pos = 0; i < numItems; i++) {
+                const itemMinX = boxes[pos++];
+                const itemMinY = boxes[pos++];
+                const itemMaxX = boxes[pos++];
+                const itemMaxY = boxes[pos++];
+                const x = (sx * ((itemMinX + itemMaxX) / 2 - minX)) | 0;
+                const y = (sy * ((itemMinY + itemMaxY) / 2 - minY)) | 0;
+                hilbertValues[i] = hilbert(x, y);
+            }
 
-        const {numItems, minX, minY, nodeSize, _indices: indices, _levelBounds: levelBounds} = this;
-        const width = (this.maxX - minX) || 1;
-        const height = (this.maxY - minY) || 1;
-        // radix sort is much faster on large inputs, but its setup costs dominate on small ones;
-        // it also needs scratch space of the same size, allocated here as the second half
-        const useRadix = numItems >= 1024;
-        const hilbertValues = new Int32Array(useRadix ? numItems * 2 : numItems);
-        const hilbertMax = (1 << 16) - 1;
-        const sx = hilbertMax / width;
-        const sy = hilbertMax / height;
-
-        // map item centers into Hilbert coordinate space and calculate Hilbert values
-        for (let i = 0, pos = 0; i < numItems; i++) {
-            const itemMinX = boxes[pos++];
-            const itemMinY = boxes[pos++];
-            const itemMaxX = boxes[pos++];
-            const itemMaxY = boxes[pos++];
-            const x = (sx * ((itemMinX + itemMaxX) / 2 - minX)) | 0;
-            const y = (sy * ((itemMinY + itemMaxY) / 2 - minY)) | 0;
-            hilbertValues[i] = hilbert(x, y);
-        }
-
-        // sort items by their Hilbert value (for packing later)
-        if (useRadix) {
-            radixSort(hilbertValues, boxes, indices, numItems, this.ArrayType);
-        } else {
-            sort(hilbertValues, boxes, indices, 0, numItems - 1, nodeSize);
+            // sort items by their Hilbert value (for packing later)
+            if (useRadix) {
+                radixSort(hilbertValues, boxes, indices, numItems, this.ArrayType);
+            } else {
+                sort(hilbertValues, boxes, indices, 0, numItems - 1, nodeSize);
+            }
         }
 
         // generate nodes at each tree level, bottom-up
@@ -236,6 +229,9 @@ export default class Flatbush {
                 boxes[pos++] = nodeMaxY;
             }
         }
+
+        // Math.min/max propagate NaN, so the root bbox has a NaN if and only if some item does
+        if (hasNaN(boxes, pos - 4)) throw new Error('Data has items with NaN coordinates.');
         this._pos = pos;
     }
 
@@ -369,6 +365,8 @@ export default class Flatbush {
                 if (minY > y1) continue;
                 const index = indices[pos >> 2] | 0;
                 if (isNode) {
+                    // a node fully inside the query has at least one item inside it too
+                    if (filterFn === undefined && minX <= x0 && minY <= y0 && maxX >= x1 && maxY >= y1) return true;
                     q.push(index, level - 1);
                 } else if (filterFn === undefined || filterFn(index, x0, y0, x1, y1)) {
                     return true;
@@ -393,7 +391,7 @@ export default class Flatbush {
         if (this._pos !== this._boxes.length) {
             throw new Error('Data not yet indexed - call index.finish().');
         }
-        if (maxResults === 0) return [];
+        if (maxResults === 0 || isNaN(x) || isNaN(y)) return [];
         const {_boxes: boxes, _levelBounds: levelBounds, _indices: indices, nodeSize} = this;
         const numItems4 = this.numItems * 4;
         const nodeSize4 = nodeSize * 4;
@@ -438,11 +436,9 @@ export default class Flatbush {
                 const dist = dx * dx + dy * dy;
                 if (dist > bound) continue;
 
-                // a NaN box has a NaN distance, which would break the queue order: such an item is left out, while a
-                // node gets NaN bounds from any NaN box below and goes in at distance 0, so the others still count
                 const childIndex = indices[pos >> 2] | 0;
                 if (isLeafLevel) {
-                    if (dist >= 0 && (filterFn === undefined || filterFn(childIndex))) {
+                    if (filterFn === undefined || filterFn(childIndex)) {
                         if (trackNearest) {
                             nearest = childIndex;
                             bound = dist;
@@ -451,7 +447,7 @@ export default class Flatbush {
                         }
                     }
                 } else {
-                    this._push(childIndex << 1, dist >= 0 ? dist : 0); // node (even id)
+                    this._push(childIndex << 1, dist); // node (even id)
                 }
             }
         }
@@ -499,6 +495,14 @@ export default class Flatbush {
         ids[pos] = id;
         dists[pos] = dist;
     }
+}
+
+/**
+ * @param {TypedArray} boxes
+ * @param {number} pos
+ */
+function hasNaN(boxes, pos) {
+    return isNaN(boxes[pos]) || isNaN(boxes[pos + 1]) || isNaN(boxes[pos + 2]) || isNaN(boxes[pos + 3]);
 }
 
 /**

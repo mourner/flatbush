@@ -89,6 +89,7 @@ Must be called before `index.finish()`.
 
 Performs indexing of the added rectangles.
 Their number must match the one provided when creating a `Flatbush` object (or call [`index.trim()`](#indextrim) first if you added fewer).
+Throws if any of the rectangles has `NaN` coordinates.
 
 #### `index.search(minX, minY, maxX, maxY[, filterFn])`
 
@@ -164,8 +165,8 @@ index 1,000,000 rectangles | 44ms
 10000 searches 0.1% area | 146ms
 10000 searches 0.01% area | 61ms
 10000 searches 0.001% area | 34ms
-10000 searches of 1 neighbor | 23ms
-10000 searches of 100 neighbors | 138ms
+10000 searches of 1 neighbor | 19ms
+10000 searches of 100 neighbors | 129ms
 1 search of 1,000,000 neighbors | 88ms
 
 ## Ports

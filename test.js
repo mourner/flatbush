@@ -435,18 +435,27 @@ test('single nearest neighbor includes an item exactly at the distance limit', (
     assert.deepEqual(index.neighbors(3, 4, 1, 0), [0]);
 });
 
-test('neighbors leaves out NaN boxes and keeps the order of the rest', () => {
-    const index = new Flatbush(1001);
-    for (let i = 0; i < 1000; i++) index.add(i, i, i + 1, i + 1);
-    index.add(NaN, 0, NaN, 0);
-    index.finish();
-    assert.deepEqual(index.neighbors(0, 0, 4), [0, 1, 2, 3]);
-    assert.deepEqual(index.neighbors(0, 0, 1), [0]);
-    const all = index.neighbors(500, 500);
-    assert.equal(all.length, 1000);
-    for (let i = 1; i < all.length; i++) {
-        assert.ok(Math.abs(all[i] - 499.5) >= Math.abs(all[i - 1] - 499.5), `rank ${i} out of order`);
+test('throws on NaN coordinates when indexing or reconstructing', () => {
+    for (const n of [5, 1001]) {
+        const index = new Flatbush(n);
+        for (let i = 0; i < n; i++) {
+            if (i === 3) index.add(i, i, i + 1, NaN);
+            else index.add(i, i, i + 1, i + 1);
+        }
+        assert.throws(() => index.finish(), {message: 'Data has items with NaN coordinates.'});
+        assert.throws(() => index.search(0, 0, 1, 1));
     }
+
+    const index = createIndex();
+    const buf = index.data.slice(0);
+    new Float64Array(buf, 8, index._boxes.length)[index._boxes.length - 1] = NaN;
+    assert.throws(() => Flatbush.from(buf), {message: 'Data has items with NaN coordinates.'});
+});
+
+test('neighbors returns nothing for a NaN query point', () => {
+    const index = createIndex();
+    assert.deepEqual(index.neighbors(NaN, 50), []);
+    assert.deepEqual(index.neighbors(50, NaN, 1), []);
 });
 
 test('sorting handles heavily duplicated Hilbert values with both sort algorithms', () => {
