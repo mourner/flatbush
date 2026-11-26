@@ -115,31 +115,47 @@ function benchSearch(boxes, name, count) {
     console.log(`${label(`${count} searches ${name}`)} ${stats(times)}`);
 }
 
-function benchNeighbors(Ksearch, M, points = coords, suffix = '') {
+// a filter rejecting 99% of items makes collides traverse past the first bbox hits, as in real use
+function benchCollides(boxes, name, count) {
+    const filterFn = i => i % 100 === 0;
+    // warmup
+    for (let i = 0; i < boxes.length; i += 4) {
+        sink += +index.collides(boxes[i], boxes[i + 1], boxes[i + 2], boxes[i + 3], filterFn);
+    }
+    const times = [];
+    for (let r = 0; r < REPS; r++) {
+        const start = performance.now();
+        for (let i = 0; i < boxes.length; i += 4) {
+            sink += +index.collides(boxes[i], boxes[i + 1], boxes[i + 2], boxes[i + 3], filterFn);
+        }
+        times.push(performance.now() - start);
+    }
+    console.log(`${label(`${count} collides ${name}`)} ${stats(times)}`);
+}
+
+function benchNeighbors(Ksearch, M) {
     // warmup
     for (let i = 0; i < Ksearch; i++) {
-        sink += index.neighbors(points[4 * i], points[4 * i + 1], M).length;
+        sink += index.neighbors(coords[4 * i], coords[4 * i + 1], M).length;
     }
     const times = [];
     for (let r = 0; r < REPS; r++) {
         const start = performance.now();
         for (let i = 0; i < Ksearch; i++) {
-            sink += index.neighbors(points[4 * i], points[4 * i + 1], M).length;
+            sink += index.neighbors(coords[4 * i], coords[4 * i + 1], M).length;
         }
         times.push(performance.now() - start);
     }
-    console.log(`${label(`${Ksearch} search${Ksearch === 1 ? '' : 'es'} of k-${M}${suffix}`)} ${stats(times)}`);
+    console.log(`${label(`${Ksearch} search${Ksearch === 1 ? '' : 'es'} of k-${M}`)} ${stats(times)}`);
 }
 
 for (const t of searchTests) benchSearch(t.boxes, t.name, t.count);
 
+const collidesTest = searchTests[2];
+benchCollides(collidesTest.boxes, collidesTest.name, collidesTest.count);
+
 benchNeighbors(10000, 1);
 benchNeighbors(10000, 100);
 benchNeighbors(1, N);
-
-// Also query independent points: box corners always have a zero-distance neighbor.
-const queryPoints = [];
-for (let i = 0; i < 10000; i++) addRandomBox(queryPoints, 0);
-benchNeighbors(10000, 1, queryPoints, ' (random)');
 
 if (sink < 0) console.log(sink); // keep sink observable

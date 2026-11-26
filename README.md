@@ -165,6 +165,7 @@ index 1,000,000 rectangles | 44ms
 10000 searches 0.1% area | 146ms
 10000 searches 0.01% area | 61ms
 10000 searches 0.001% area | 34ms
+10000 collides 0.1% area | 21ms
 10000 searches of 1 neighbor | 19ms
 10000 searches of 100 neighbors | 129ms
 1 search of 1,000,000 neighbors | 88ms
